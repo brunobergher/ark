@@ -1,150 +1,178 @@
 # ark
 
-An offline knowledge library on a single drive. Wikipedia with images, medical
-and repair references, Khan Academy, books, maps, a local language model, and
-offline translation — all readable on any Mac, PC, or Linux machine without an
-internet connection.
+An offline knowledge library for emergencies, packed onto one drive.
+The drive is the artifact; the computer is whatever you happen to have.
 
-The drive is the artifact. The computer is whatever you happen to have.
+## Use It
 
-## If you are reading this during an emergency
-
-Skip everything below. Open `START-HERE.txt` at the root of the drive.
-
-## Layout
-
-```
-/zim/         Kiwix content — Wikipedia, medical, repair, dictionary, books
-/kolibri/     Khan Academy, served by Kolibri
-/apps/        Portable readers and runners for Mac, Windows, Linux
-/models/      LLM weights
-/translate/   Argos offline translation models
-/maps/        OSM extracts for Iberia
-/docs/        Personal documents — insurance, medical, IDs, contacts
-/scripts/     Update machinery and configuration
-manifest.tsv  What's on the drive, where it came from, when it was fetched
-kit-log.txt   Append-only log of every fetch and verify run
-```
-
-## Setting up a new drive
-
-Format as **exFAT**, name it `ark`. exFAT reads and writes on macOS, Windows,
-and Linux without extra drivers, which is the whole point.
-
-On macOS, Disk Utility → Erase → Format: exFAT, Scheme: GUID Partition Map.
-
-Then:
+For a prepared drive, open the content directly with Kiwix, Kolibri, the local
+models, or the files in `/docs/`. For setup and maintenance, use the root
+`update` command:
 
 ```bash
-git clone <this repo> ark-scripts && cd ark-scripts
-cp scripts/kit.conf.example scripts/kit.conf
-$EDITOR scripts/kit.conf  # set KIT_ROOT, pick your content
-./update --check          # prove every URL resolves and the space adds up
-./update --dry-run        # walk the full run, download nothing
-./update                  # go make coffee, this takes many hours
+./update --check
+./update
 ```
 
-`./update --check` is the one to run first. It resolves the newest build of
-every ZIM, probes each URL with a HEAD (falling back to a one-byte ranged GET
-where the host rejects HEAD), and prints a table of what resolved, what didn't,
-the total download size, and whether the drive has room. It transfers headers
-and nothing else, so it takes seconds. A renamed ZIM or a moved model repo
-shows up here rather than sixty gigabytes into a real run.
+`./update --check` proves the configured downloads still exist and that the
+drive has room. `./update` runs the configured fetch stages and resumes
+interrupted downloads.
 
-The first run pulls a few hundred gigabytes. It resumes if interrupted, so
-Ctrl-C is safe and re-running picks up where it stopped.
+## Contents
 
-## Changing what's on the drive
+The default config is meant to build a kit that is useful without an internet
+connection:
 
-The checked-in default lives in `scripts/kit.conf.example`. Your local editable
-copy is `scripts/kit.conf`, which git ignores so drive paths, channel IDs, and
-personal choices do not accidentally get committed. Add a line to `ZIMS`,
-`MODELS`, `KOLIBRI_CHANNELS`, or `ARGOS_PAIRS` and re-run `./update`. Remove a
-line and re-run with `./update --prune` to delete the orphaned files.
+| | |
+|---|---|
+| Wikipedia | Full English Wikipedia with images |
+| Medical references | Wikipedia medicine, WikiEM, and practical health guides |
+| Repair references | iFixit repair guides with photos |
+| Books and dictionary | Project Gutenberg and English Wiktionary |
+| Lessons | Khan Academy through Kolibri once a channel ID is set |
+| Translation | Argos offline language packs |
+| Local AI | Qwen 2B for portability and gpt-oss 20B for stronger machines |
+| Personal docs | A place for IDs, insurance, medical notes, contacts, and plans |
+| Reserved space | Folders for app binaries and map extracts |
 
-ZIM entries are prefixes, not filenames — `wikipedia:wikipedia_en_all_maxi`
-resolves to whatever the newest monthly build is. You never pin a date, and
-re-running is how you update.
+After a completed run, those live under:
 
-## Updating
+```text
+/zim/         Kiwix content
+/kolibri/     Khan Academy content
+/apps/        Optional portable readers and runners
+/models/      LLM weights
+/translate/   Argos translation models
+/maps/        Optional map extracts
+/docs/        Personal documents
+/scripts/     Update machinery and configuration
+manifest.tsv  What was fetched, from where, and when
+kit-log.txt   Append-only update log
+```
 
-`./update` is also the refresh path. It resolves the newest build of every ZIM,
-downloads what changed, deletes superseded versions, and leaves everything else
-alone.
+## Key Features
 
-Do this once a year. Put it on a calendar next to the smoke-alarm batteries.
-The refresh is also what keeps the drive's NAND healthy — SSDs left unpowered
-for years slowly lose charge, and a few hours plugged in fixes that.
+1. Configurable: edit `scripts/kit.conf` to choose ZIMs, models, Kolibri
+   channels, translation pairs, and the target drive path.
+2. Portable: the drive is formatted as exFAT and the content is readable from
+   macOS, Windows, and Linux.
+3. Resumable: the shared fetch helper supports partial downloads, so long runs
+   can pick up where they stopped.
+4. Preflighted: `./update --check` verifies URLs and the space budget before
+   the real download starts.
+5. Shareable: the repo tracks scripts and `scripts/kit.conf.example`, while
+   downloaded content, logs, manifests, and your local config stay out of git.
 
-## Reading the content
+## First Run
 
-**Kiwix** is the reader for everything in `/zim/`. Kiwix Desktop for a single
-person on one machine; `kiwix-serve` when you want the whole family reading on
-their own phones over a local network.
+Format the drive as **exFAT** and name it `ark`. On macOS: Disk Utility,
+Erase, Format: exFAT, Scheme: GUID Partition Map.
+
+Clone the setup repo somewhere convenient:
+
+```bash
+git clone <this repo> ark-scripts
+cd ark-scripts
+cp scripts/kit.conf.example scripts/kit.conf
+$EDITOR scripts/kit.conf
+```
+
+Set `KIT_ROOT` to the mounted drive path, then adjust the content lists if you
+want a smaller or larger kit.
+
+Run the remote preflight:
+
+```bash
+./update --check
+```
+
+The current repo includes the root wrapper, preflight, shared helpers, and
+example config. The download stages named by `scripts/fetch-all.sh` still need
+to be added or restored before `./update --dry-run` or `./update` can fetch the
+content.
+
+Once those fetch stage scripts are present, walk the run without writing:
+
+```bash
+./update --dry-run
+```
+
+Then start the real download:
+
+```bash
+./update
+```
+
+The first full run will pull a few hundred gigabytes. It is safe to interrupt
+with Ctrl-C; re-running `./update` resumes incomplete files.
+
+## Refresh
+
+Refresh the drive about once a year:
+
+```bash
+./update
+```
+
+With the fetch stage scripts in place, this resolves the newest matching ZIM
+builds, downloads what changed, and leaves existing complete files alone. If
+you removed entries from `scripts/kit.conf`, prune old files too:
+
+```bash
+./update --prune
+```
+
+Annual refreshes also help the physical drive: SSDs left unpowered for years
+slowly lose charge, and a few hours plugged in is good maintenance.
+
+## Reading
+
+Use Kiwix for everything in `/zim/`. For one person, open the files in Kiwix
+Desktop. To serve the library to phones or laptops on a local network:
 
 ```bash
 kiwix-serve --port 8080 /Volumes/ark/zim/*.zim
 ```
 
-Then anyone on the network opens `http://<your-ip>:8080`. If the router is down
-too, turn on Internet Sharing on macOS and serve from the laptop's own hotspot.
+Then open `http://<your-ip>:8080` from another device. If the router is down,
+use a laptop hotspot or local network sharing.
 
-**Kolibri** serves Khan Academy the same way:
+Kolibri serves Khan Academy:
 
 ```bash
 KOLIBRI_HOME=/Volumes/ark/kolibri kolibri start
 ```
 
-**The model** runs from `/models/`. Point the runner at the weights, open the
-web UI it serves, and optionally register a Kiwix MCP server so the model can
-search the library instead of guessing.
-
-## A note on the model
-
-The kit carries two llamafiles by default:
-
-| | |
-|---|---|
-| `Qwen3.5-2B-Q8_0.llamafile` | Portable first choice, roughly 3 GB on disk. Use this when the computer is old, borrowed, or memory constrained. |
-| `gpt-oss-20b-mxfp4.llamafile` | Better answers on stronger machines, roughly 12 GB on disk. Try this when the computer has enough RAM and the smaller model is not helping. |
-
-On macOS or Linux, make the file executable before the first run:
+The local AI models live in `/models/`. On macOS or Linux, make them executable
+once:
 
 ```bash
 chmod +x /Volumes/ark/models/*.llamafile
 /Volumes/ark/models/Qwen3.5-2B-Q8_0.llamafile
 ```
 
-The 20B model is optional in practice. If it refuses to load or starts swapping,
-drop back to Qwen and use the library directly for anything important.
+Use `Qwen3.5-2B-Q8_0.llamafile` first on unknown hardware. Try
+`gpt-oss-20b-mxfp4.llamafile` on stronger machines. The model is a convenience
+layer over the library, not the source of truth; when it disagrees with the
+offline references, believe the references.
 
-The model is the least load-bearing part of the drive. Kiwix is the ground
-truth; the model is a natural-language interface to it. When they disagree,
-believe the ZIM.
+## Share Or Clone
 
-## Scripts
+The repo is meant to be checked in without the downloaded content:
 
-| | |
-|---|---|
-| `update` | The root-level command to check, fetch, and refresh the drive |
-| `scripts/kit.conf.example` | The shareable default config |
-| `scripts/kit.conf` | Your ignored local config |
-| `scripts/check-remote.sh` | Probe every URL and the space budget |
-| `scripts/fetch-all.sh` | Run every fetch stage |
-| `scripts/lib.sh` | Shared helpers, not run directly |
+```bash
+git status
+```
 
-Use `./update --check` for preflight, `./update --dry-run` for a no-write run,
-and `./update --prune` after removing content from `scripts/kit.conf`.
+Only scripts, docs, and `scripts/kit.conf.example` should be tracked. Your
+local `scripts/kit.conf`, downloaded content folders, `manifest.tsv`, and
+`kit-log.txt` are ignored.
 
-## Cloning to a second drive
+To duplicate a finished drive:
 
 ```bash
 rsync -avh --progress --delete /Volumes/ark/ /Volumes/ark-backup/
 ```
 
-Keep the copies in different places. A backup in the same bag as the primary
-protects against drive failure and nothing else. One in a safe, one in the car,
-one at a family member's house — that's what makes it a backup.
-
-Copies are cheap. A drive costs less than a night out and makes an entire
-household more resilient. Hand them out.
+Keep copies in different places. A backup in the same bag as the primary
+protects against drive failure and nothing else.

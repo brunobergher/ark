@@ -18,11 +18,11 @@ ZIMS=(
   "wikipedia:wikipedia_en_all_maxi"          # full EN Wikipedia, images  ~115 GB
   "wikipedia:wikipedia_en_medicine_maxi"     # medical subset, standalone   ~2 GB
   "other:wikem_en_all_maxi"                  # emergency medicine wiki
-  "zimgit:zimgit-medicine_en"                # Where There Is No Doctor et al
-  "zimgit:zimgit-post-disaster_en"           # post-disaster guidance
-  "zimgit:zimgit-water_en"                   # water treatment
+  "other:zimgit-medicine_en"                 # Where There Is No Doctor et al
+  "other:zimgit-post-disaster_en"            # post-disaster guidance
+  "other:zimgit-water_en"                    # water treatment
   "ifixit:ifixit_en_all"                     # repair guides, photos       ~5 GB
-  "wiktionary:wiktionary_en_all_maxi"        # dictionary                  ~5 GB
+  "wiktionary:wiktionary_en_all_nopic"       # dictionary
   "gutenberg:gutenberg_en_all"               # books
 )
 
@@ -47,7 +47,7 @@ LLAMAFILE_RELEASE=""   # e.g. "https://github.com/Mozilla-Ocho/llamafile/release
 # Full Khan Academy English is roughly 200 GB.
 
 KOLIBRI_CHANNELS=(
-  "khan-academy-en|CHANNEL_ID_HERE"
+  # "khan-academy-en|CHANNEL_ID_HERE"
 )
 
 # ── Argos translate language pairs ───────────────────────────────────────────
