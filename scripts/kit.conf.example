@@ -1,0 +1,68 @@
+# kit.conf — everything you'd normally want to change lives here.
+#
+# Adding content later: append a line to the relevant array.
+# Removing content: delete or comment the line, then run ./update --prune from
+# the drive root to delete the orphaned files.
+
+# ── Where the drive is ───────────────────────────────────────────────────────
+
+KIT_ROOT="/Volumes/ark"
+
+# ── Kiwix ZIMs ───────────────────────────────────────────────────────────────
+#
+# Format: "subdirectory:filename-prefix"
+# The scripts resolve the newest dated build matching each prefix, so you never
+# pin a date. Browse https://download.kiwix.org/zim/ to find more.
+
+ZIMS=(
+  "wikipedia:wikipedia_en_all_maxi"          # full EN Wikipedia, images  ~115 GB
+  "wikipedia:wikipedia_en_medicine_maxi"     # medical subset, standalone   ~2 GB
+  "other:wikem_en_all_maxi"                  # emergency medicine wiki
+  "zimgit:zimgit-medicine_en"                # Where There Is No Doctor et al
+  "zimgit:zimgit-post-disaster_en"           # post-disaster guidance
+  "zimgit:zimgit-water_en"                   # water treatment
+  "ifixit:ifixit_en_all"                     # repair guides, photos       ~5 GB
+  "wiktionary:wiktionary_en_all_maxi"        # dictionary                  ~5 GB
+  "gutenberg:gutenberg_en_all"               # books
+)
+
+# ── LLM models ───────────────────────────────────────────────────────────────
+#
+# Format: "local-filename|url"
+# Leave the array empty to skip. See README for the hardware caveats.
+
+MODELS=(
+  "Qwen3.5-2B-Q8_0.llamafile|https://huggingface.co/mozilla-ai/llamafile_0.10/resolve/main/Qwen3.5-2B-Q8_0.llamafile"
+  "gpt-oss-20b-mxfp4.llamafile|https://huggingface.co/mozilla-ai/llamafile_0.10/resolve/main/gpt-oss-20b-mxfp4.llamafile"
+)
+
+# The llamafile release to bundle in apps/ (leave empty to skip)
+LLAMAFILE_RELEASE=""   # e.g. "https://github.com/Mozilla-Ocho/llamafile/releases/download/0.9.3/llamafile-0.9.3"
+
+# ── Kolibri channels ─────────────────────────────────────────────────────────
+#
+# Format: "label|channel-id"
+# Find IDs with:  kolibri manage listchannels
+# or on Kolibri Studio / the Kolibri content browser.
+# Full Khan Academy English is roughly 200 GB.
+
+KOLIBRI_CHANNELS=(
+  "khan-academy-en|CHANNEL_ID_HERE"
+)
+
+# ── Argos translate language pairs ───────────────────────────────────────────
+
+ARGOS_PAIRS=(
+  "en:pt"
+  "pt:en"
+  "en:es"
+  "es:en"
+  "en:fr"
+  "fr:en"
+)
+
+# ── Behaviour ────────────────────────────────────────────────────────────────
+
+MIRROR="https://download.kiwix.org/zim"
+MIN_FREE_GB=50          # refuse to start if less free space than this
+CURL_RETRIES=10

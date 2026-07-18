@@ -1,0 +1,5 @@
+* text=auto
+
+*.sh text eol=lf
+update text eol=lf
+*.conf.example text eol=lf

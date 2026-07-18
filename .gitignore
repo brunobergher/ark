@@ -1,0 +1,33 @@
+# Local machine and drive state
+/scripts/kit.conf
+/.env
+/.env.*
+
+# Downloaded offline content
+/zim/
+/models/
+/apps/
+/kolibri/
+/translate/
+/maps/
+/docs/
+
+# Generated run output
+/manifest.tsv
+/manifest.tsv.tmp
+/kit-log.txt
+/*.tmp
+/*.part
+
+# macOS and removable-drive metadata
+.DS_Store
+._*
+.Spotlight-V100/
+.TemporaryItems/
+.Trashes/
+.fseventsd/
+
+# Editor and shell noise
+*~
+*.swp
+*.swo

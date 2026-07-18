@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+# Single root-level entry point for checking and updating the drive.
+
+set -euo pipefail
+
+HERE="$(cd "$(dirname "$0")" && pwd)"
+SCRIPTS="$HERE/scripts"
+CONFIG="$SCRIPTS/kit.conf"
+CONFIG_EXAMPLE="$SCRIPTS/kit.conf.example"
+
+usage() {
+  cat <<'EOF'
+usage:
+  ./update             check remotes, then download or resume everything
+  ./update --dry-run   check remotes, then walk the update without downloading
+  ./update --prune     update and delete files no longer listed in scripts/kit.conf
+  ./update --check     only prove URLs and space budget
+EOF
+}
+
+ensure_config() {
+  if [ -f "$CONFIG" ]; then
+    return
+  fi
+  if [ ! -f "$CONFIG_EXAMPLE" ]; then
+    printf 'error: missing %s\n' "$CONFIG_EXAMPLE" >&2
+    exit 1
+  fi
+  cp "$CONFIG_EXAMPLE" "$CONFIG"
+  printf 'Created scripts/kit.conf from scripts/kit.conf.example. Edit it for this drive when needed.\n'
+}
+
+case "${1:-}" in
+  -h|--help)
+    usage
+    exit 0
+    ;;
+  --check)
+    shift
+    ensure_config
+    exec "$SCRIPTS/check-remote.sh" "$@"
+    ;;
+esac
+
+ensure_config
+"$SCRIPTS/check-remote.sh"
+"$SCRIPTS/fetch-all.sh" "$@"
