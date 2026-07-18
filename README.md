@@ -8,8 +8,8 @@ The drive is the artifact; the computer is whatever you happen to have.
 ## Use It
 
 For a prepared drive, open the content directly with Kiwix, Kolibri, the local
-models, the app pantry in `/apps/`, or the files in `/docs/`. For setup and
-maintenance, use the root `update` command:
+models, the app pantry in `/apps/`, map files in `/maps/`, or the files in
+`/docs/`. For setup and maintenance, use the root `update` command:
 
 ```bash
 ./update --check
@@ -29,7 +29,8 @@ Before you need the drive, prepare the devices that might use it:
 3. On iPhone and iPad, install the apps listed in `/apps/ios/app-store-links.html`
    while internet is available.
 4. At minimum, have Kiwix for `.zim` files, a PDF/EPUB reader, VLC or another
-   broad media player, and an offline maps app if `/maps/` is populated.
+   broad media player, and an offline maps app if `/maps/` is populated. Test
+   importing one stored map before going offline.
 5. For Kolibri, local AI, and translation on phones, plan to connect through a
    browser to one laptop or appliance running Ark on the local network.
 
@@ -48,7 +49,7 @@ connection:
 | Translation | Argos offline language packs |
 | Local AI | Qwen 2B for portability and gpt-oss 20B for stronger machines |
 | Personal docs | A place for IDs, insurance, medical notes, contacts, and plans |
-| Reserved space | Folders for app binaries and map extracts |
+| Reserved space | Folders for app binaries and offline map files |
 
 After a completed run, those live under:
 
@@ -58,7 +59,7 @@ After a completed run, those live under:
 /apps/        App pantry: installers, APKs, portable readers and runners
 /models/      LLM weights
 /translate/   Argos translation models
-/maps/        Optional map extracts
+/maps/        Optional offline maps for apps, web maps, or conversion
 /docs/        Personal documents
 /scripts/     Update machinery and configuration
 manifest.tsv  What was fetched, from where, and when
@@ -215,6 +216,50 @@ carry portable `.exe` builds where available, and installers where needed. For
 Android, carry APKs and test installing them from the drive after enabling
 local installs. For iOS/iPadOS, keep App Store prep links in `IOS_APP_LINKS`
 and install those apps before going offline.
+
+### Maps
+
+The repo stores map recipes; the prepared drive stores the map files. Configure
+regions in `scripts/kit.conf`, then run `./update` to populate `/maps/`. Map
+downloads stay out of git like the ZIMs, models, and app pantry.
+
+Pinned map entries use this format:
+
+```bash
+MAPS=(
+  "platform|provider|region|filename|url|sha256|notes"
+)
+```
+
+Resolver-backed entries use the same resolver style as the app pantry:
+
+```bash
+MAP_RESOLVERS=(
+  "web|protomaps|sample-city|direct:https://example.com/sample-city.pmtiles|sample-city.pmtiles||Direct PMTiles example"
+)
+```
+
+The generated layout is:
+
+```text
+/maps/
+  README.txt
+  android/<provider>/<region>/<file>
+  ios/<provider>/<region>/<file>
+  web/<provider>/<region>/<file.pmtiles>
+  raw/<provider>/<region>/<file>
+```
+
+| Format | Use | Notes |
+|---|---|---|
+| OsmAnd `.obf.zip` | Android or iOS with OsmAnd import where supported | Best mobile-first path; test on the exact device |
+| Organic Maps files | Organic Maps app-specific workflow | Use direct/manual URLs only when you know the import path works |
+| PMTiles `.pmtiles` | Future hosted browser map from a laptop or appliance | Store now; viewer comes later |
+| Geofabrik `.osm.pbf` or `.shp.zip` | Advanced conversion or analysis | Useful source data, not the easiest phone workflow |
+
+Good upstream source categories are OsmAnd offline map downloads, Organic Maps
+map data mirrors, Protomaps PMTiles downloads, and Geofabrik OpenStreetMap
+extracts. Choose regions deliberately: maps can become large quickly.
 
 ### Prepare Phones And Tablets
 

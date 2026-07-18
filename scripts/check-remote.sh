@@ -28,6 +28,8 @@ kolibri_entries=( "${KOLIBRI_CHANNELS[@]}" )
 app_entries=( "${APPS[@]}" )
 app_resolver_entries=( "${APP_RESOLVERS[@]}" )
 ios_link_entries=( "${IOS_APP_LINKS[@]}" )
+map_entries=( "${MAPS[@]}" )
+map_resolver_entries=( "${MAP_RESOLVERS[@]}" )
 
 resolve_app() {
   local resolver="$1" pattern="$2" repo api tmp resolved url
@@ -201,6 +203,50 @@ else
 fi
 
 echo
+echo "Maps"
+if [ "${#map_entries[@]}" -eq 0 ] && [ "${#map_resolver_entries[@]}" -eq 0 ]; then
+  row "$(yellow SKIP)" "(no maps configured)" ""
+else
+  for entry in "${map_entries[@]}"; do
+    IFS='|' read -r platform provider region filename url sha256 notes <<< "$entry"
+    p=$(probe "$url"); st="${p%%$'\t'*}"; sz="${p##*$'\t'}"
+    if [ "$st" = "200" ]; then
+      if [ "$sz" -gt 0 ] 2>/dev/null; then
+        row "$(green OK)" "$platform/$provider/$region/$filename" "$(human "$sz")"
+        total=$(( total + sz ))
+      else
+        row "$(green OK)" "$platform/$provider/$region/$filename" "unknown size"
+      fi
+    else
+      row "$(red FAIL)" "$platform/$provider/$region/$filename" "HTTP $st"
+      bad=$((bad+1))
+    fi
+  done
+
+  for entry in "${map_resolver_entries[@]}"; do
+    IFS='|' read -r platform provider region resolver pattern sha256 notes <<< "$entry"
+    resolved=$(resolve_app "$resolver" "$pattern") || {
+      row "$(red FAIL)" "$platform/$provider/$region" "could not resolve $resolver"
+      bad=$((bad+1))
+      continue
+    }
+    IFS=$'\t' read -r tag filename url <<< "$resolved"
+    p=$(probe "$url"); st="${p%%$'\t'*}"; sz="${p##*$'\t'}"
+    if [ "$st" = "200" ]; then
+      if [ "$sz" -gt 0 ] 2>/dev/null; then
+        row "$(green OK)" "$platform/$provider/$region/$filename" "$tag, $(human "$sz")"
+        total=$(( total + sz ))
+      else
+        row "$(green OK)" "$platform/$provider/$region/$filename" "$tag, unknown size"
+      fi
+    else
+      row "$(red FAIL)" "$platform/$provider/$region/$filename" "HTTP $st"
+      bad=$((bad+1))
+    fi
+  done
+fi
+
+echo
 echo "iOS prep links"
 if [ "${#ios_link_entries[@]}" -eq 0 ]; then
   row "$(yellow SKIP)" "(none configured)" ""
@@ -265,7 +311,7 @@ echo
 if [ "$bad" -eq 0 ]; then
   set +u
   missing_stages=()
-  for stage in fetch-zims fetch-models fetch-apps fetch-kolibri fetch-argos; do
+  for stage in fetch-zims fetch-models fetch-apps fetch-maps fetch-kolibri fetch-argos; do
     [ -x "$HERE/$stage.sh" ] || missing_stages+=( "scripts/$stage.sh" )
   done
 

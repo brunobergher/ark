@@ -80,6 +80,39 @@ IOS_APP_LINKS=(
   "VLC|https://apps.apple.com/app/vlc-media-player/id650377962|Install before going offline for broad media playback"
 )
 
+# ── Offline maps ─────────────────────────────────────────────────────────────
+#
+# Ark can carry app-ready offline map files and hosted web-map payloads. These
+# are personal-kit downloads fetched by ./update into /maps/, not files checked
+# into git.
+#
+# MAPS format:
+#   "platform|provider|region|filename|url|sha256|notes"
+#
+# Suggested platform values:
+#   android  App-specific mobile map files such as OsmAnd .obf.zip
+#   ios      App-specific mobile map files where import is supported
+#   web      Hosted browser map payloads such as .pmtiles
+#   raw      Advanced source data such as Geofabrik .osm.pbf or .shp.zip
+
+MAPS=(
+  # "android|osmand|california|California_northamerica_2.obf.zip|https://download.osmand.net/download.php?standard=yes&file=California_northamerica_2.obf.zip||OsmAnd offline map for California"
+  # "web|protomaps|sample-city|sample-city.pmtiles|https://example.com/sample-city.pmtiles||PMTiles for a future hosted web map"
+  # "raw|geofabrik|portugal|portugal-latest.osm.pbf|https://download.geofabrik.de/europe/portugal-latest.osm.pbf||Raw OpenStreetMap extract for advanced conversion"
+)
+
+# MAP_RESOLVERS format:
+#   "platform|provider|region|resolver|asset-pattern|sha256|notes"
+#
+# Supported resolvers:
+#   direct:<url>                 Uses asset-pattern as the destination filename.
+#   github-release:<owner/repo>  Picks the first latest-release asset whose
+#                                filename matches asset-pattern as an ERE.
+
+MAP_RESOLVERS=(
+  # "web|protomaps|sample-city|direct:https://example.com/sample-city.pmtiles|sample-city.pmtiles||Direct PMTiles resolver example"
+)
+
 # ── Kolibri channels ─────────────────────────────────────────────────────────
 #
 # Format: "label|channel-id"
