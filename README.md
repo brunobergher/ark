@@ -119,7 +119,9 @@ Then start the real download:
 ```
 
 The first full run will pull a few hundred gigabytes. It is safe to interrupt
-with Ctrl-C; re-running `./update` resumes incomplete files.
+with Ctrl-C; re-running `./update` resumes incomplete files. Active downloads
+use `.partial` files and are moved into their final names only after the file
+finishes and passes the available size/hash checks.
 
 ## Refresh
 

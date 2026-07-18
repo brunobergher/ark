@@ -103,9 +103,16 @@ sha256_file() {
   fi
 }
 
+manifest_has_label() {
+  local label="$1"
+  [ -f "$MANIFEST" ] || return 1
+  awk -F'\t' -v label="$label" '$1 == label {found=1} END {exit !found}' "$MANIFEST"
+}
+
 # fetch <url> <dest> <label>  — resumable, size-verified
 fetch() {
-  local url="$1" dest="$2" label="$3" expected have final status p
+  local url="$1" dest="$2" label="$3" expected have final status p partial partial_have
+  partial="$dest.partial"
   p=$(probe "$url"); status="${p%%$'\t'*}"; expected="${p##*$'\t'}"
 
   if [ "$status" != "200" ]; then
@@ -121,6 +128,46 @@ fetch() {
       record "$label" "$url" "$expected"
       return 0
     fi
+    warn "$label final file is incomplete — moving it to $(basename "$partial")"
+    if [ "$DRY_RUN" = 0 ]; then
+      if [ -f "$partial" ]; then
+        partial_have=$(wc -c < "$partial" | tr -d ' ')
+        if [ "$partial_have" -lt "$have" ] 2>/dev/null; then
+          mv "$dest" "$partial"
+        else
+          rm -f "$dest"
+        fi
+      else
+        mv "$dest" "$partial"
+      fi
+    fi
+  fi
+
+  if [ -f "$dest" ] && { [ "$expected" -le 0 ] 2>/dev/null || [ -z "$expected" ]; }; then
+    if manifest_has_label "$label"; then
+      log "SKIP  $label — already present; remote size unknown"
+      final=$(wc -c < "$dest" | tr -d ' ')
+      record "$label" "$url" "$final"
+      return 0
+    fi
+    warn "$label final file is not in the manifest — moving it to $(basename "$partial")"
+    if [ "$DRY_RUN" = 0 ]; then
+      if [ -f "$partial" ]; then
+        partial_have=$(wc -c < "$partial" | tr -d ' ')
+        have=$(wc -c < "$dest" | tr -d ' ')
+        if [ "$partial_have" -lt "$have" ] 2>/dev/null; then
+          mv "$dest" "$partial"
+        else
+          rm -f "$dest"
+        fi
+      else
+        mv "$dest" "$partial"
+      fi
+    fi
+  fi
+
+  if [ -f "$partial" ]; then
+    have=$(wc -c < "$partial" | tr -d ' ')
     log "RESUME $label — $(human "$have") of $(human_or_unknown "$expected")"
   else
     log "GET   $label — $(human_or_unknown "$expected")"
@@ -128,23 +175,47 @@ fetch() {
 
   if [ "$DRY_RUN" = 1 ]; then
     log "  ok  reachable, HTTP $status, $(human_or_unknown "$expected")"
-    DRY_TOTAL=$(( ${DRY_TOTAL:-0} + expected ))
+    if [ "$expected" -gt 0 ] 2>/dev/null; then
+      DRY_TOTAL=$(( ${DRY_TOTAL:-0} + expected ))
+    fi
     return 0
   fi
 
+  mkdir -p "$(dirname "$partial")"
   if curl -fL --continue-at - --progress-meter \
        --retry "$CURL_RETRIES" --retry-delay 5 --retry-all-errors \
-       -o "$dest" "$url"; then
-    final=$(wc -c < "$dest" | tr -d ' ')
+       -o "$partial" "$url"; then
+    final=$(wc -c < "$partial" | tr -d ' ')
     if [ "$expected" -gt 0 ] 2>/dev/null && [ "$final" != "$expected" ]; then
       warn "$label size mismatch — got $final, expected $expected. Re-run to resume."
       return 1
     fi
+    mv "$partial" "$dest"
     log "OK    $label"
     record "$label" "$url" "$final"
   else
-    warn "$label download failed. Re-run to resume from where it stopped."
-    return 1
+    if [ -f "$partial" ] && [ "$(wc -c < "$partial" | tr -d ' ')" -gt 0 ] 2>/dev/null; then
+      warn "$label resume failed. Restarting this file from the beginning."
+      rm -f "$partial"
+      if curl -fL --progress-meter \
+           --retry "$CURL_RETRIES" --retry-delay 5 --retry-all-errors \
+           -o "$partial" "$url"; then
+        final=$(wc -c < "$partial" | tr -d ' ')
+        if [ "$expected" -gt 0 ] 2>/dev/null && [ "$final" != "$expected" ]; then
+          warn "$label size mismatch — got $final, expected $expected. Re-run to resume."
+          return 1
+        fi
+        mv "$partial" "$dest"
+        log "OK    $label"
+        record "$label" "$url" "$final"
+      else
+        warn "$label download failed. Re-run to resume from where it stopped."
+        return 1
+      fi
+    else
+      warn "$label download failed. Re-run to resume from where it stopped."
+      return 1
+    fi
   fi
 }
 
@@ -185,6 +256,9 @@ prune_unlisted() {
   [ -d "$root" ] || return 0
 
   while IFS= read -r path; do
+    case "$path" in
+      *.partial) rm -f "$path"; continue ;;
+    esac
     if ! grep -Fxq "$path" "$keep_file"; then
       log "PRUNE $path"
       rm -f "$path"
