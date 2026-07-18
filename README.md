@@ -12,13 +12,14 @@ models, the app pantry in `/apps/`, map files in `/maps/`, or the files in
 `/docs/`. For setup and maintenance, use the root `update` command:
 
 ```bash
+./update --help
 ./update --check
 ./update
 ```
 
-`./update --check` proves the configured downloads still exist and that the
-drive has room. `./update` runs the configured fetch stages and resumes
-interrupted downloads.
+`./update --help` lists the available commands. `./update --check` proves the
+configured downloads still exist and that the drive has room. `./update` runs
+the configured fetch stages and resumes interrupted downloads.
 
 Before you need the drive, prepare the devices that might use it:
 
