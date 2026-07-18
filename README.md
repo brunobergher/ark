@@ -103,12 +103,10 @@ Run the remote preflight:
 ./update --check
 ```
 
-The current repo includes the root wrapper, preflight, shared helpers, and
-example config. The download stages named by `scripts/fetch-all.sh` still need
-to be added or restored before `./update --dry-run` or `./update` can fetch the
-content.
-
-Once those fetch stage scripts are present, walk the run without writing:
+The current repo includes the root wrapper, preflight, shared helpers, example
+config, and fetch stages for ZIMs, models, app payloads, Python tool
+wheelhouses, maps, Kolibri channels, and Argos translation packages. Walk the
+run without writing:
 
 ```bash
 ./update --dry-run
@@ -157,10 +155,12 @@ kiwix-serve --port 8080 /Volumes/ark/zim/*.zim
 Then open `http://<your-ip>:8080` from another device. If the router is down,
 use a laptop hotspot or local network sharing.
 
-Kolibri serves Khan Academy:
+Kolibri serves Khan Academy. If Kolibri is carried in `/apps/python/`, use the
+drive-local virtualenv created from the wheelhouse; otherwise use an installed
+`kolibri` command:
 
 ```bash
-KOLIBRI_HOME=/Volumes/ark/kolibri kolibri start
+KOLIBRI_HOME=/Volumes/ark/kolibri /Volumes/ark/apps/python/venvs/kolibri/bin/kolibri start
 ```
 
 The local AI models live in `/models/`. On macOS or Linux, make them executable

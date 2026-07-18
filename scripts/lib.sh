@@ -39,6 +39,13 @@ warn() { log "WARN  $*"; }
 die()  { printf 'error: %s\n' "$*" >&2; exit 1; }
 
 human() { awk -v b="${1:-0}" 'BEGIN{ if (b<1073741824) printf "%.0f MB", b/1048576; else printf "%.1f GB", b/1073741824 }'; }
+human_or_unknown() {
+  if [ "${1:-0}" -gt 0 ] 2>/dev/null; then
+    human "$1"
+  else
+    printf 'unknown size'
+  fi
+}
 
 preflight() {
   [ -d "$KIT_ROOT" ] || die "$KIT_ROOT not mounted. Plug in the drive, or edit KIT_ROOT in scripts/kit.conf."
@@ -114,13 +121,13 @@ fetch() {
       record "$label" "$url" "$expected"
       return 0
     fi
-    log "RESUME $label — $(human "$have") of $(human "$expected")"
+    log "RESUME $label — $(human "$have") of $(human_or_unknown "$expected")"
   else
-    log "GET   $label — $(human "$expected")"
+    log "GET   $label — $(human_or_unknown "$expected")"
   fi
 
   if [ "$DRY_RUN" = 1 ]; then
-    log "  ok  reachable, HTTP $status, $(human "$expected")"
+    log "  ok  reachable, HTTP $status, $(human_or_unknown "$expected")"
     DRY_TOTAL=$(( ${DRY_TOTAL:-0} + expected ))
     return 0
   fi
@@ -185,6 +192,58 @@ prune_unlisted() {
   done < <(find "$root" -type f)
 
   find "$root" -depth -type d -empty ! -path "$root" -delete
+}
+
+python_tool_spec() {
+  local tool="$1" entry name spec notes
+
+  set +u
+  for entry in "${PYTHON_TOOL_PACKAGES[@]}"; do
+    IFS='|' read -r name spec notes <<< "$entry"
+    if [ "$name" = "$tool" ]; then
+      set -u
+      printf '%s\n' "$spec"
+      return 0
+    fi
+  done
+  set -u
+  return 1
+}
+
+ensure_python_tool() {
+  local tool="$1" executable="$2" spec venv wheelhouse bin
+
+  spec=$(python_tool_spec "$tool" 2>/dev/null || true)
+  venv="$APP_PYTHON_DIR/venvs/$tool"
+  wheelhouse="$APP_PYTHON_DIR/wheelhouse/$tool"
+  bin="$venv/bin/$executable"
+
+  if [ -x "$bin" ]; then
+    printf '%s\n' "$bin"
+    return 0
+  fi
+
+  if [ "$DRY_RUN" = 1 ]; then
+    printf '%s\n' "$bin"
+    return 0
+  fi
+
+  if [ -n "$spec" ] && [ -d "$wheelhouse" ] && find "$wheelhouse" -type f | grep -q .; then
+    log "SETUP python-tool:$tool — creating $venv from offline wheelhouse" >&2
+    python3 -m venv "$venv" >&2 || return 1
+    "$venv/bin/python" -m pip install --no-index --find-links "$wheelhouse" "$spec" >&2 || return 1
+    [ -x "$bin" ] || return 1
+    printf '%s\n' "$bin"
+    return 0
+  fi
+
+  if command -v "$executable" >/dev/null; then
+    command -v "$executable"
+    return 0
+  fi
+
+  warn "$tool is not available. Run scripts/fetch-python-tools.sh first, or install $spec." >&2
+  return 1
 }
 
 record() {
