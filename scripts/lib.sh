@@ -13,6 +13,10 @@ fi
 ZIM_DIR="$KIT_ROOT/zim"
 MODEL_DIR="$KIT_ROOT/models"
 APP_DIR="$KIT_ROOT/apps"
+APP_MACOS_DIR="$APP_DIR/macos"
+APP_WINDOWS_DIR="$APP_DIR/windows"
+APP_ANDROID_DIR="$APP_DIR/android"
+APP_IOS_DIR="$APP_DIR/ios"
 KOLIBRI_DIR="$KIT_ROOT/kolibri"
 TRANSLATE_DIR="$KIT_ROOT/translate"
 MAPS_DIR="$KIT_ROOT/maps"
@@ -39,6 +43,7 @@ preflight() {
   [ -d "$KIT_ROOT" ] || die "$KIT_ROOT not mounted. Plug in the drive, or edit KIT_ROOT in scripts/kit.conf."
   command -v curl >/dev/null || die "curl not found"
   mkdir -p "$ZIM_DIR" "$MODEL_DIR" "$APP_DIR" "$KOLIBRI_DIR" \
+           "$APP_MACOS_DIR" "$APP_WINDOWS_DIR" "$APP_ANDROID_DIR" "$APP_IOS_DIR" \
            "$TRANSLATE_DIR" "$MAPS_DIR" "$DOCS_DIR" || die "cannot write to $KIT_ROOT"
   touch "$LOG"
   local free
@@ -78,6 +83,17 @@ probe() {
 
 remote_size() { probe "$1" | cut -f2; }
 
+sha256_file() {
+  local path="$1"
+  if command -v sha256sum >/dev/null; then
+    sha256sum "$path" | awk '{print $1}'
+  elif command -v shasum >/dev/null; then
+    shasum -a 256 "$path" | awk '{print $1}'
+  else
+    die "sha256sum or shasum is required to verify checksums"
+  fi
+}
+
 # fetch <url> <dest> <label>  — resumable, size-verified
 fetch() {
   local url="$1" dest="$2" label="$3" expected have final status p
@@ -89,7 +105,7 @@ fetch() {
     return 1
   fi
 
-  if [ -f "$dest" ] && [ -n "$expected" ]; then
+  if [ -f "$dest" ] && [ "$expected" -gt 0 ] 2>/dev/null; then
     have=$(wc -c < "$dest" | tr -d ' ')
     if [ "$have" = "$expected" ]; then
       log "SKIP  $label — already complete ($(human "$expected"))"
@@ -111,7 +127,7 @@ fetch() {
        --retry "$CURL_RETRIES" --retry-delay 5 --retry-all-errors \
        -o "$dest" "$url"; then
     final=$(wc -c < "$dest" | tr -d ' ')
-    if [ -n "$expected" ] && [ "$final" != "$expected" ]; then
+    if [ "$expected" -gt 0 ] 2>/dev/null && [ "$final" != "$expected" ]; then
       warn "$label size mismatch — got $final, expected $expected. Re-run to resume."
       return 1
     fi
@@ -121,6 +137,52 @@ fetch() {
     warn "$label download failed. Re-run to resume from where it stopped."
     return 1
   fi
+}
+
+# fetch_verified <url> <dest> <label> <sha256>
+fetch_verified() {
+  local url="$1" dest="$2" label="$3" expected_hash="${4:-}" actual_hash tmp
+
+  fetch "$url" "$dest" "$label" || return 1
+
+  if [ "$DRY_RUN" = 1 ]; then
+    return 0
+  fi
+
+  if [ -z "$expected_hash" ]; then
+    warn "$label — no sha256 configured; size was verified but contents were not pinned"
+    return 0
+  fi
+
+  actual_hash=$(sha256_file "$dest")
+  if [ "$actual_hash" != "$expected_hash" ]; then
+    warn "$label checksum mismatch — got $actual_hash, expected $expected_hash"
+    if [ -f "$MANIFEST.tmp" ]; then
+      tmp="$MANIFEST.tmp.$$"
+      awk -F'\t' -v label="$label" '$1 != label' "$MANIFEST.tmp" > "$tmp"
+      mv "$tmp" "$MANIFEST.tmp"
+    fi
+    return 1
+  fi
+
+  log "OK    $label sha256 verified"
+}
+
+prune_unlisted() {
+  local root="$1" keep_file="$2" path
+
+  [ "$PRUNE" = 1 ] || return 0
+  [ "$DRY_RUN" = 1 ] && return 0
+  [ -d "$root" ] || return 0
+
+  while IFS= read -r path; do
+    if ! grep -Fxq "$path" "$keep_file"; then
+      log "PRUNE $path"
+      rm -f "$path"
+    fi
+  done < <(find "$root" -type f)
+
+  find "$root" -depth -type d -empty ! -path "$root" -delete
 }
 
 record() {

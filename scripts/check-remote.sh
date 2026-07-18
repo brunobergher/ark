@@ -25,6 +25,56 @@ set +u
 zim_entries=( "${ZIMS[@]}" )
 model_entries=( "${MODELS[@]}" )
 kolibri_entries=( "${KOLIBRI_CHANNELS[@]}" )
+app_entries=( "${APPS[@]}" )
+app_resolver_entries=( "${APP_RESOLVERS[@]}" )
+ios_link_entries=( "${IOS_APP_LINKS[@]}" )
+
+resolve_app() {
+  local resolver="$1" pattern="$2" repo api tmp resolved url
+
+  case "$resolver" in
+    direct:*)
+      url="${resolver#direct:}"
+      [ -n "$pattern" ] || return 1
+      printf 'direct\t%s\t%s\n' "$pattern" "$url"
+      ;;
+    github-release:*)
+      repo="${resolver#github-release:}"
+      api="https://api.github.com/repos/$repo/releases/latest"
+      tmp=$(mktemp)
+      if ! curl -fsSL --max-time 60 "$api" -o "$tmp"; then
+        rm -f "$tmp"
+        return 1
+      fi
+      resolved=$(python3 -c '
+import json
+import re
+import sys
+
+pattern = sys.argv[1]
+path = sys.argv[2]
+with open(path, "r", encoding="utf-8") as handle:
+    data = json.load(handle)
+tag = data.get("tag_name", "latest")
+
+for asset in data.get("assets", []):
+    name = asset.get("name", "")
+    url = asset.get("browser_download_url", "")
+    if name and url and re.search(pattern, name):
+        print(f"{tag}\t{name}\t{url}")
+        raise SystemExit(0)
+
+raise SystemExit(2)
+' "$pattern" "$tmp")
+      rm -f "$tmp"
+      [ -n "$resolved" ] || return 1
+      printf '%s\n' "$resolved"
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}
 
 echo
 echo "ark — remote preflight  $(date -u +%Y-%m-%dT%H:%MZ)"
@@ -104,6 +154,69 @@ if [ -n "$LLAMAFILE_RELEASE" ]; then
   fi
 fi
 
+# ── app pantry ───────────────────────────────────────────────────────────────
+echo
+echo "App pantry"
+set +u
+if [ "${#app_entries[@]}" -eq 0 ] && [ "${#app_resolver_entries[@]}" -eq 0 ]; then
+  row "$(yellow SKIP)" "(no app binaries configured)" ""
+else
+  for entry in "${app_entries[@]}"; do
+    IFS='|' read -r platform name filename url sha256 notes <<< "$entry"
+    p=$(probe "$url"); st="${p%%$'\t'*}"; sz="${p##*$'\t'}"
+    if [ "$st" = "200" ]; then
+      if [ "$sz" -gt 0 ] 2>/dev/null; then
+        row "$(green OK)" "$platform/$name/$filename" "$(human "$sz")"
+        total=$(( total + sz ))
+      else
+        row "$(green OK)" "$platform/$name/$filename" "unknown size"
+      fi
+    else
+      row "$(red FAIL)" "$platform/$name/$filename" "HTTP $st"
+      bad=$((bad+1))
+    fi
+  done
+
+  for entry in "${app_resolver_entries[@]}"; do
+    IFS='|' read -r platform name resolver pattern sha256 notes <<< "$entry"
+    resolved=$(resolve_app "$resolver" "$pattern") || {
+      row "$(red FAIL)" "$platform/$name" "could not resolve $resolver"
+      bad=$((bad+1))
+      continue
+    }
+    IFS=$'\t' read -r tag filename url <<< "$resolved"
+    p=$(probe "$url"); st="${p%%$'\t'*}"; sz="${p##*$'\t'}"
+    if [ "$st" = "200" ]; then
+      if [ "$sz" -gt 0 ] 2>/dev/null; then
+        row "$(green OK)" "$platform/$name/$filename" "$tag, $(human "$sz")"
+        total=$(( total + sz ))
+      else
+        row "$(green OK)" "$platform/$name/$filename" "$tag, unknown size"
+      fi
+    else
+      row "$(red FAIL)" "$platform/$name/$filename" "HTTP $st"
+      bad=$((bad+1))
+    fi
+  done
+fi
+
+echo
+echo "iOS prep links"
+if [ "${#ios_link_entries[@]}" -eq 0 ]; then
+  row "$(yellow SKIP)" "(none configured)" ""
+else
+  for entry in "${ios_link_entries[@]}"; do
+    IFS='|' read -r name url notes <<< "$entry"
+    p=$(probe "$url"); st="${p%%$'\t'*}"; sz="${p##*$'\t'}"
+    if [ "$st" = "200" ]; then
+      row "$(green OK)" "$name" "link reachable"
+    else
+      row "$(red FAIL)" "$name" "HTTP $st"
+      bad=$((bad+1))
+    fi
+  done
+fi
+
 # ── things that aren't plain URLs ────────────────────────────────────────────
 echo
 echo "Tool-driven content (size not knowable in advance)"
@@ -152,7 +265,7 @@ echo
 if [ "$bad" -eq 0 ]; then
   set +u
   missing_stages=()
-  for stage in fetch-zims fetch-models fetch-kolibri fetch-argos; do
+  for stage in fetch-zims fetch-models fetch-apps fetch-kolibri fetch-argos; do
     [ -x "$HERE/$stage.sh" ] || missing_stages+=( "scripts/$stage.sh" )
   done
 

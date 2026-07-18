@@ -39,6 +39,47 @@ MODELS=(
 # The llamafile release to bundle in apps/ (leave empty to skip)
 LLAMAFILE_RELEASE=""   # e.g. "https://github.com/Mozilla-Ocho/llamafile/releases/download/0.9.3/llamafile-0.9.3"
 
+# ── App pantry ───────────────────────────────────────────────────────────────
+#
+# Ark can carry the app installers and portable binaries needed to use the kit.
+# These are personal-kit payloads fetched by ./update into /apps/, not files
+# checked into git.
+#
+# APPS format:
+#   "platform|name|filename|url|sha256|notes"
+#
+# Leave sha256 empty if the upstream does not publish stable checksums. The
+# download will still be size-verified, but the script will warn that it is not
+# content-pinned.
+
+APPS=(
+  # "windows|kiwix|kiwix-desktop.zip|https://example.com/kiwix-desktop.zip||Portable Kiwix Desktop for Windows"
+  # "android|kiwix|kiwix.apk|https://example.com/kiwix.apk||Install from Files after enabling local APK installs"
+)
+
+# APP_RESOLVERS format:
+#   "platform|name|resolver|asset-pattern|sha256|notes"
+#
+# Supported resolvers:
+#   direct:<url>                 Uses asset-pattern as the destination filename.
+#   github-release:<owner/repo>  Picks the first latest-release asset whose
+#                                filename matches asset-pattern as an ERE.
+
+APP_RESOLVERS=(
+  # "macos|kiwix|github-release:kiwix/kiwix-desktop|.*mac.*\\.dmg$||Latest Kiwix Desktop macOS release"
+)
+
+# iOS/iPadOS cannot normally install app binaries from the drive. Keep App
+# Store prep links here so /apps/ios/app-store-links.html can be generated.
+#
+# Format:
+#   "name|url|notes"
+
+IOS_APP_LINKS=(
+  "Kiwix|https://apps.apple.com/app/kiwix/id997079563|Install before going offline for ZIM libraries"
+  "VLC|https://apps.apple.com/app/vlc-media-player/id650377962|Install before going offline for broad media playback"
+)
+
 # ── Kolibri channels ─────────────────────────────────────────────────────────
 #
 # Format: "label|channel-id"
