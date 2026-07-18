@@ -20,6 +20,19 @@ maintenance, use the root `update` command:
 drive has room. `./update` runs the configured fetch stages and resumes
 interrupted downloads.
 
+Before you need the drive, prepare the devices that might use it:
+
+1. On macOS and Windows, test the readers, installers, and runners carried in
+   `/apps/macos/` and `/apps/windows/`.
+2. On Android, install the APKs carried in `/apps/android/`, then open each app
+   once so permissions and first-run prompts are done.
+3. On iPhone and iPad, install the apps listed in `/apps/ios/app-store-links.html`
+   while internet is available.
+4. At minimum, have Kiwix for `.zim` files, a PDF/EPUB reader, VLC or another
+   broad media player, and an offline maps app if `/maps/` is populated.
+5. For Kolibri, local AI, and translation on phones, plan to connect through a
+   browser to one laptop or appliance running Ark on the local network.
+
 ## Contents
 
 The default config is meant to build a kit that is useful without an internet
