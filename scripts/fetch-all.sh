@@ -12,7 +12,7 @@ preflight
 
 started=$(date -u +%s)
 rc=0
-stages=(fetch-zims fetch-models fetch-apps fetch-maps fetch-kolibri fetch-argos)
+stages=(fetch-zims fetch-models fetch-apps fetch-python-tools fetch-maps fetch-kolibri fetch-argos)
 
 for stage in "${stages[@]}"; do
   [ -x "$HERE/$stage.sh" ] || die "missing scripts/$stage.sh. Add or restore this fetch stage before running ./update."

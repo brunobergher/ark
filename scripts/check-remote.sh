@@ -30,6 +30,7 @@ app_resolver_entries=( "${APP_RESOLVERS[@]}" )
 ios_link_entries=( "${IOS_APP_LINKS[@]}" )
 map_entries=( "${MAPS[@]}" )
 map_resolver_entries=( "${MAP_RESOLVERS[@]}" )
+python_tool_entries=( "${PYTHON_TOOL_PACKAGES[@]}" )
 
 resolve_app() {
   local resolver="$1" pattern="$2" repo api tmp resolved url
@@ -203,6 +204,27 @@ else
 fi
 
 echo
+echo "Python tool wheelhouses"
+if [ "${#python_tool_entries[@]}" -eq 0 ]; then
+  row "$(yellow SKIP)" "(none configured)" ""
+else
+  if python3 -m pip --version >/dev/null 2>&1; then
+    pip_status="pip available"
+  else
+    pip_status="python3 pip missing — needed for fetch-python-tools"
+    bad=$((bad+1))
+  fi
+  for entry in "${python_tool_entries[@]}"; do
+    IFS='|' read -r name spec notes <<< "$entry"
+    if [ "$pip_status" = "pip available" ]; then
+      row "$(green OK)" "$name" "configured: $spec"
+    else
+      row "$(red FAIL)" "$name" "$pip_status"
+    fi
+  done
+fi
+
+echo
 echo "Maps"
 if [ "${#map_entries[@]}" -eq 0 ] && [ "${#map_resolver_entries[@]}" -eq 0 ]; then
   row "$(yellow SKIP)" "(no maps configured)" ""
@@ -266,10 +288,12 @@ fi
 # ── things that aren't plain URLs ────────────────────────────────────────────
 echo
 echo "Tool-driven content (size not knowable in advance)"
-if command -v kolibri >/dev/null; then
+if printf '%s\n' "${python_tool_entries[@]}" | awk -F'|' '$1 == "kolibri" {found=1} END {exit !found}'; then
+  row "$(green OK)" "kolibri CLI" "configured for /apps/python wheelhouse"
+elif command -v kolibri >/dev/null; then
   row "$(green OK)" "kolibri CLI" "installed"
 else
-  row "$(yellow WARN)" "kolibri CLI" "missing — pipx install kolibri"
+  row "$(yellow WARN)" "kolibri CLI" "missing — add kolibri to PYTHON_TOOL_PACKAGES"
 fi
 for entry in "${kolibri_entries[@]}"; do
   label="${entry%%|*}"; cid="${entry#*|}"
@@ -282,10 +306,12 @@ for entry in "${kolibri_entries[@]}"; do
 done
 set -u
 
-if python3 -c "import argostranslate.package" 2>/dev/null; then
+if printf '%s\n' "${python_tool_entries[@]}" | awk -F'|' '$1 == "argostranslate" {found=1} END {exit !found}'; then
+  row "$(green OK)" "argostranslate" "configured for /apps/python wheelhouse"
+elif python3 -c "import argostranslate.package" 2>/dev/null; then
   row "$(green OK)" "argostranslate" "installed"
 else
-  row "$(yellow WARN)" "argostranslate" "missing — pipx install argostranslate"
+  row "$(yellow WARN)" "argostranslate" "missing — add argostranslate to PYTHON_TOOL_PACKAGES"
 fi
 
 # ── verdict ──────────────────────────────────────────────────────────────────
@@ -311,7 +337,7 @@ echo
 if [ "$bad" -eq 0 ]; then
   set +u
   missing_stages=()
-  for stage in fetch-zims fetch-models fetch-apps fetch-maps fetch-kolibri fetch-argos; do
+  for stage in fetch-zims fetch-models fetch-apps fetch-python-tools fetch-maps fetch-kolibri fetch-argos; do
     [ -x "$HERE/$stage.sh" ] || missing_stages+=( "scripts/$stage.sh" )
   done
 

@@ -17,6 +17,7 @@ APP_MACOS_DIR="$APP_DIR/macos"
 APP_WINDOWS_DIR="$APP_DIR/windows"
 APP_ANDROID_DIR="$APP_DIR/android"
 APP_IOS_DIR="$APP_DIR/ios"
+APP_PYTHON_DIR="$APP_DIR/python"
 KOLIBRI_DIR="$KIT_ROOT/kolibri"
 TRANSLATE_DIR="$KIT_ROOT/translate"
 MAPS_DIR="$KIT_ROOT/maps"
@@ -44,6 +45,7 @@ preflight() {
   command -v curl >/dev/null || die "curl not found"
   mkdir -p "$ZIM_DIR" "$MODEL_DIR" "$APP_DIR" "$KOLIBRI_DIR" \
            "$APP_MACOS_DIR" "$APP_WINDOWS_DIR" "$APP_ANDROID_DIR" "$APP_IOS_DIR" \
+           "$APP_PYTHON_DIR" \
            "$TRANSLATE_DIR" "$MAPS_DIR" "$DOCS_DIR" || die "cannot write to $KIT_ROOT"
   touch "$LOG"
   local free

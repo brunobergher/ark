@@ -80,6 +80,20 @@ IOS_APP_LINKS=(
   "VLC|https://apps.apple.com/app/vlc-media-player/id650377962|Install before going offline for broad media playback"
 )
 
+# ── Python tool wheelhouses ──────────────────────────────────────────────────
+#
+# Some Ark tools are Python applications rather than single portable binaries.
+# ./update can carry their installable wheels under /apps/python/wheelhouse/
+# so a prepared drive has the packages available without internet.
+#
+# Format:
+#   "name|pip-package-spec|notes"
+
+PYTHON_TOOL_PACKAGES=(
+  "kolibri|kolibri|Offline wheelhouse for the Kolibri CLI and server"
+  "argostranslate|argostranslate|Offline wheelhouse for Argos Translate tooling"
+)
+
 # ── Offline maps ─────────────────────────────────────────────────────────────
 #
 # Ark can carry app-ready offline map files and hosted web-map payloads. These

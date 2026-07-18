@@ -207,6 +207,8 @@ The generated layout is:
   macos/<name>/<file>
   windows/<name>/<file>
   android/<name>/<file.apk>
+  python/wheelhouse/<name>/
+  python/venvs/
   ios/README.txt
   ios/app-store-links.html
 ```
@@ -216,6 +218,27 @@ carry portable `.exe` builds where available, and installers where needed. For
 Android, carry APKs and test installing them from the drive after enabling
 local installs. For iOS/iPadOS, keep App Store prep links in `IOS_APP_LINKS`
 and install those apps before going offline.
+
+Python-based tools such as Kolibri and Argos Translate are carried as offline
+wheelhouses:
+
+```bash
+PYTHON_TOOL_PACKAGES=(
+  "kolibri|kolibri|Offline wheelhouse for the Kolibri CLI and server"
+  "argostranslate|argostranslate|Offline wheelhouse for Argos Translate tooling"
+)
+```
+
+After `./update` populates `/apps/python/wheelhouse/`, install from the drive
+without internet into a local virtualenv:
+
+```bash
+python3 -m venv /Volumes/ark/apps/python/venvs/kolibri
+/Volumes/ark/apps/python/venvs/kolibri/bin/python -m pip install --no-index --find-links /Volumes/ark/apps/python/wheelhouse/kolibri kolibri
+```
+
+Use the same pattern for `argostranslate`, changing the virtualenv and
+wheelhouse names.
 
 ### Maps
 
