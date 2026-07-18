@@ -1,6 +1,8 @@
 # ark
 
 An offline knowledge library for emergencies, packed onto one drive.
+Designed with families in mind, including survival and reference content,
+educational videos and small, easy to run LLMs.
 The drive is the artifact; the computer is whatever you happen to have.
 
 ## Use It
@@ -108,7 +110,8 @@ with Ctrl-C; re-running `./update` resumes incomplete files.
 
 ## Refresh
 
-Refresh the drive about once a year:
+Once a year, check that the drive, your batteries, cables, etc are working,
+and run this to keep the content fresh:
 
 ```bash
 ./update

@@ -44,10 +44,15 @@ LLAMAFILE_RELEASE=""   # e.g. "https://github.com/Mozilla-Ocho/llamafile/release
 # Format: "label|channel-id"
 # Find IDs with:  kolibri manage listchannels
 # or on Kolibri Studio / the Kolibri content browser.
-# Full Khan Academy English is roughly 200 GB.
+# Command-line imports need the 32-character channel ID, not the shorter token.
 
 KOLIBRI_CHANNELS=(
-  # "khan-academy-en|CHANNEL_ID_HERE"
+  # Small smoke test: one English math channel, under 1 GB.
+  "pbs-family-math|b8bd7770063d40a8bd9b30d4703927b5"
+
+  # Larger options for later:
+  # "khan-academy-en-us|c9d7f950ab6b5a1199e3d6c10d7f0103"
+  # "khan-academy-en-cbse-india|2fd54ca47a8f59c99fcefaaa3894c19e"
 )
 
 # ── Argos translate language pairs ───────────────────────────────────────────
