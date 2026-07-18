@@ -132,7 +132,7 @@ fetch() {
     return 0
   fi
 
-  if curl -fL --progress-bar -C - \
+  if curl -fL --continue-at - --progress-meter \
        --retry "$CURL_RETRIES" --retry-delay 5 --retry-all-errors \
        -o "$dest" "$url"; then
     final=$(wc -c < "$dest" | tr -d ' ')
