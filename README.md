@@ -21,6 +21,10 @@ models, the app pantry in `/apps/`, map files in `/maps/`, or the files in
 configured downloads still exist and that the drive has room. `./update` runs
 the configured fetch stages and resumes interrupted downloads.
 
+Large Kiwix ZIM downloads run in parallel. Tune `MAX_PARALLEL_DOWNLOADS` in
+`scripts/kit.conf` if your connection or upstream mirrors behave better with
+more or fewer simultaneous files.
+
 Before you need the drive, prepare the devices that might use it:
 
 1. On macOS and Windows, test the readers, installers, and runners carried in
@@ -122,7 +126,9 @@ Then start the real download:
 The first full run will pull a few hundred gigabytes. It is safe to interrupt
 with Ctrl-C; re-running `./update` resumes incomplete files. Active downloads
 use `.partial` files and are moved into their final names only after the file
-finishes and passes the available size/hash checks.
+finishes and passes the available size/hash checks. If you change download
+settings while `./update` is already running, stop it with Ctrl-C and start it
+again; completed files are skipped and partial files resume.
 
 ## Refresh
 

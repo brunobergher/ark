@@ -159,3 +159,4 @@ ARGOS_PAIRS=(
 MIRROR="https://download.kiwix.org/zim"
 MIN_FREE_GB=50          # refuse to start if less free space than this
 CURL_RETRIES=10
+MAX_PARALLEL_DOWNLOADS=3 # ZIM downloads to run at the same time

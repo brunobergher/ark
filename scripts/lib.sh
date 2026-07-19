@@ -237,10 +237,10 @@ fetch_verified() {
   actual_hash=$(sha256_file "$dest")
   if [ "$actual_hash" != "$expected_hash" ]; then
     warn "$label checksum mismatch — got $actual_hash, expected $expected_hash"
-    if [ -f "$MANIFEST.tmp" ]; then
-      tmp="$MANIFEST.tmp.$$"
-      awk -F'\t' -v label="$label" '$1 != label' "$MANIFEST.tmp" > "$tmp"
-      mv "$tmp" "$MANIFEST.tmp"
+    if [ -f "${MANIFEST_TMP:-$MANIFEST.tmp}" ]; then
+      tmp="${MANIFEST_TMP:-$MANIFEST.tmp}.$$"
+      awk -F'\t' -v label="$label" '$1 != label' "${MANIFEST_TMP:-$MANIFEST.tmp}" > "$tmp"
+      mv "$tmp" "${MANIFEST_TMP:-$MANIFEST.tmp}"
     fi
     return 1
   fi
@@ -321,18 +321,22 @@ ensure_python_tool() {
 }
 
 record() {
-  printf '%s\t%s\t%s\t%s\n' "$1" "$2" "$3" "$(date -u +%Y-%m-%d)" >> "$MANIFEST.tmp"
+  printf '%s\t%s\t%s\t%s\n' "$1" "$2" "$3" "$(date -u +%Y-%m-%d)" >> "${MANIFEST_TMP:-$MANIFEST.tmp}"
 }
 
-manifest_begin() { : > "$MANIFEST.tmp"; }
+manifest_begin() {
+  MANIFEST_TMP="${MANIFEST_TMP:-$MANIFEST.tmp}"
+  : > "$MANIFEST_TMP"
+}
 manifest_commit() {
-  if [ "$DRY_RUN" = 1 ]; then rm -f "$MANIFEST.tmp"; return; fi
+  MANIFEST_TMP="${MANIFEST_TMP:-$MANIFEST.tmp}"
+  if [ "$DRY_RUN" = 1 ]; then rm -f "$MANIFEST_TMP"; return; fi
   # merge: keep entries from other scripts that didn't run this time
   if [ -f "$MANIFEST" ]; then
     awk -F'\t' 'NR==FNR {seen[$1]=1; next} !($1 in seen)' \
-      "$MANIFEST.tmp" "$MANIFEST" >> "$MANIFEST.tmp"
+      "$MANIFEST_TMP" "$MANIFEST" >> "$MANIFEST_TMP"
   fi
-  sort -u -o "$MANIFEST.tmp" "$MANIFEST.tmp"
-  mv "$MANIFEST.tmp" "$MANIFEST"
+  sort -u -o "$MANIFEST_TMP" "$MANIFEST_TMP"
+  mv "$MANIFEST_TMP" "$MANIFEST"
   log "manifest updated — $MANIFEST"
 }
