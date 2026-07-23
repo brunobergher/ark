@@ -13,7 +13,7 @@ preflight
 started=$(date -u +%s)
 rc=0
 parallel_stages=(fetch-zims fetch-models fetch-apps fetch-python-tools fetch-maps)
-serial_stages=(build-kiwix-library fetch-kolibri fetch-argos)
+serial_stages=(build-kiwix-library build-web-maps fetch-kolibri fetch-argos)
 all_stages=( "${parallel_stages[@]}" "${serial_stages[@]}" )
 stage_tmp_dir=$(mktemp -d)
 parallel_pids=()

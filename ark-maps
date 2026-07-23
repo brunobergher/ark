@@ -1,0 +1,90 @@
+#!/usr/bin/env bash
+# Start the Ark offline map viewer on this laptop.
+
+set -euo pipefail
+
+HERE="$(cd "$(dirname "$0")" && pwd)"
+. "$HERE/scripts/lib.sh"
+
+MAP_PROVIDER_DIR="$MAPS_DIR/web/protomaps"
+VIEWER_DIR="$MAPS_DIR/viewer"
+TILE_PORT="${ARK_MAPS_TILE_PORT:-8082}"
+VIEWER_PORT="${ARK_MAPS_VIEWER_PORT:-8090}"
+PUBLIC_URL="${ARK_MAPS_PUBLIC_URL:-http://127.0.0.1:$TILE_PORT}"
+
+die_local() {
+  printf 'error: %s\n' "$*" >&2
+  exit 1
+}
+
+host_pmtiles() {
+  local os arch root archive bin
+
+  if command -v pmtiles >/dev/null; then
+    command -v pmtiles
+    return 0
+  fi
+
+  os=$(uname -s)
+  arch=$(uname -m)
+  case "$os:$arch" in
+    Darwin:arm64)
+      root="$APP_MACOS_DIR/pmtiles-arm64"
+      archive=$(find "$root" -maxdepth 1 -type f -name 'go-pmtiles-*_Darwin_arm64.zip' 2>/dev/null | sort | tail -n1)
+      ;;
+    Darwin:x86_64)
+      root="$APP_MACOS_DIR/pmtiles-x86_64"
+      archive=$(find "$root" -maxdepth 1 -type f -name 'go-pmtiles-*_Darwin_x86_64.zip' 2>/dev/null | sort | tail -n1)
+      ;;
+    Linux:x86_64)
+      root="$APP_LINUX_DIR/pmtiles-x86_64"
+      archive=$(find "$root" -maxdepth 1 -type f -name 'go-pmtiles_*_Linux_x86_64.tar.gz' 2>/dev/null | sort | tail -n1)
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+
+  [ -n "${archive:-}" ] || return 1
+  mkdir -p "$root/extracted"
+  case "$archive" in
+    *.zip) unzip -oq "$archive" -d "$root/extracted" ;;
+    *.tar.gz) tar -xzf "$archive" -C "$root/extracted" ;;
+    *) return 1 ;;
+  esac
+  bin=$(find "$root/extracted" -type f -name pmtiles | sort | tail -n1)
+  [ -n "$bin" ] || return 1
+  chmod +x "$bin" 2>/dev/null || true
+  printf '%s\n' "$bin"
+}
+
+[ -d "$MAP_PROVIDER_DIR" ] || die_local "no web maps found in $MAP_PROVIDER_DIR; run ./update first"
+find "$MAP_PROVIDER_DIR" -maxdepth 1 -type f -name '*.pmtiles' | grep -q . || die_local "no .pmtiles files found in $MAP_PROVIDER_DIR; run ./update first"
+[ -f "$VIEWER_DIR/index.html" ] || die_local "map viewer missing at $VIEWER_DIR/index.html; run ./update first"
+
+pmtiles_bin=$(host_pmtiles) || die_local "pmtiles CLI missing; run ./update first"
+
+cleanup() {
+  [ -n "${tile_pid:-}" ] && kill "$tile_pid" 2>/dev/null || true
+  [ -n "${viewer_pid:-}" ] && kill "$viewer_pid" 2>/dev/null || true
+}
+trap cleanup EXIT INT TERM
+
+"$pmtiles_bin" serve "$MAP_PROVIDER_DIR" --port="$TILE_PORT" --public-url="$PUBLIC_URL" --cors='*' &
+tile_pid=$!
+
+python3 -m http.server "$VIEWER_PORT" --directory "$VIEWER_DIR" >/dev/null 2>&1 &
+viewer_pid=$!
+
+url="http://127.0.0.1:$VIEWER_PORT/?tiles=$PUBLIC_URL"
+printf 'Ark maps running:\n'
+printf '  %s\n' "$url"
+printf 'Press Ctrl-C to stop.\n'
+
+if command -v open >/dev/null; then
+  open "$url" >/dev/null 2>&1 || true
+elif command -v xdg-open >/dev/null; then
+  xdg-open "$url" >/dev/null 2>&1 || true
+fi
+
+wait "$tile_pid" "$viewer_pid"

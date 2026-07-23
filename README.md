@@ -15,11 +15,13 @@ models, the app pantry in `/apps/`, map files in `/maps/`, or the files in
 ./update --help
 ./update --check
 ./update
+./ark-maps
 ```
 
 `./update --help` lists the available commands. `./update --check` proves the
 configured downloads still exist and that the drive has room. `./update` runs
-the configured fetch stages and resumes interrupted downloads.
+the configured fetch stages and resumes interrupted downloads. `./ark-maps`
+starts the offline laptop map viewer when web maps are present.
 
 Independent fetch stages run in parallel, and large Kiwix ZIM downloads also
 run in parallel inside the ZIM stage. Tune `MAX_PARALLEL_STAGES` and
@@ -274,6 +276,16 @@ stored `.obf.zip` from the drive with OsmAnd, and confirm the region appears
 offline before relying on it. Raw Geofabrik `.osm.pbf` files are source data;
 they are valuable, but they are not a normal end-user phone workflow.
 
+For laptop maps, configure `WEB_MAP_EXTRACTS`, run `./update`, then start:
+
+```bash
+./ark-maps
+```
+
+That opens `http://127.0.0.1:8090` and serves local PMTiles from
+`/maps/web/protomaps/` through the bundled `pmtiles` CLI. It does not require
+internet after the update has built the map extracts.
+
 Pinned map entries use this format:
 
 ```bash
@@ -298,7 +310,8 @@ The generated layout is:
   mobile/<provider>/<region>/<file>
   android/<provider>/<region>/<file>
   ios/<provider>/<region>/<file>
-  web/<provider>/<region>/<file.pmtiles>
+  web/protomaps/<region>.pmtiles
+  viewer/index.html
   raw/<provider>/<region>/<file>
 ```
 
@@ -306,7 +319,7 @@ The generated layout is:
 |---|---|---|
 | OsmAnd `.obf.zip` | Android or iOS with OsmAnd import where supported | Best mobile-first path; store under `/maps/mobile/osmand/` and test on the exact device |
 | Organic Maps files | Organic Maps app-specific workflow | Use direct/manual URLs only when you know the import path works |
-| PMTiles `.pmtiles` | Future hosted browser map from a laptop or appliance | Store now; viewer comes later |
+| PMTiles `.pmtiles` | Laptop browser map through `./ark-maps` | Built under `/maps/web/protomaps/` |
 | Geofabrik `.osm.pbf` or `.shp.zip` | Advanced conversion or analysis | Useful source data, not the easiest phone workflow |
 
 Good upstream source categories are OsmAnd offline map downloads, Organic Maps

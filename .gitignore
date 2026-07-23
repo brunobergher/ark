@@ -18,6 +18,7 @@
 /kit-log.txt
 /*.tmp
 /*.part
+*.partial
 
 # macOS and removable-drive metadata
 .DS_Store

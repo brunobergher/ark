@@ -30,6 +30,7 @@ app_resolver_entries=( "${APP_RESOLVERS[@]}" )
 ios_link_entries=( "${IOS_APP_LINKS[@]}" )
 map_entries=( "${MAPS[@]}" )
 map_resolver_entries=( "${MAP_RESOLVERS[@]}" )
+web_map_entries=( "${WEB_MAP_EXTRACTS[@]}" )
 python_tool_entries=( "${PYTHON_TOOL_PACKAGES[@]}" )
 
 resolve_app() {
@@ -321,6 +322,40 @@ else
 fi
 
 echo
+echo "Web map extracts"
+if [ "${#web_map_entries[@]}" -eq 0 ]; then
+  row "$(yellow SKIP)" "(no browser maps configured)" ""
+else
+  for entry in "${web_map_entries[@]}"; do
+    IFS='|' read -r provider region source maxzoom bbox notes <<< "$entry"
+    case "$source" in
+      protomaps-latest)
+        p=$(probe "https://build-metadata.protomaps.dev/builds.json"); st="${p%%$'\t'*}"
+        if [ "$st" = "200" ]; then
+          row "$(green OK)" "$provider/$region" "will extract maxzoom ${maxzoom:-12} from latest Protomaps build"
+        else
+          row "$(red FAIL)" "$provider/$region" "build metadata HTTP $st"
+          bad=$((bad+1))
+        fi
+        ;;
+      http://*|https://*)
+        p=$(probe "$source"); st="${p%%$'\t'*}"
+        if [ "$st" = "200" ]; then
+          row "$(green OK)" "$provider/$region" "will extract maxzoom ${maxzoom:-12}"
+        else
+          row "$(red FAIL)" "$provider/$region" "source HTTP $st"
+          bad=$((bad+1))
+        fi
+        ;;
+      *)
+        row "$(red FAIL)" "$provider/$region" "unknown source $source"
+        bad=$((bad+1))
+        ;;
+    esac
+  done
+fi
+
+echo
 echo "iOS prep links"
 if [ "${#ios_link_entries[@]}" -eq 0 ]; then
   row "$(yellow SKIP)" "(none configured)" ""
@@ -391,7 +426,7 @@ echo
 if [ "$bad" -eq 0 ]; then
   set +u
   missing_stages=()
-  for stage in fetch-zims fetch-models fetch-apps fetch-python-tools fetch-maps build-kiwix-library fetch-kolibri fetch-argos; do
+  for stage in fetch-zims fetch-models fetch-apps fetch-python-tools fetch-maps build-kiwix-library build-web-maps fetch-kolibri fetch-argos; do
     [ -x "$HERE/$stage.sh" ] || missing_stages+=( "scripts/$stage.sh" )
   done
 

@@ -74,6 +74,10 @@ APP_RESOLVERS=(
   "windows|kiwix-tools|mirror-latest:https://download.kiwix.org/release/kiwix-tools|^kiwix-tools_win-x86_64-[0-9].*\\.zip$||Kiwix command-line tools for Windows, including kiwix-serve"
   "linux|kiwix-tools|mirror-latest:https://download.kiwix.org/release/kiwix-tools|^kiwix-tools_linux-x86_64-musl-[0-9].*\\.tar\\.gz$||Kiwix command-line tools for Linux x86_64, including kiwix-serve"
   "android|kiwix|github-release:kiwix/kiwix-android|^v.*-universal-standalone\\.apk$||Universal Kiwix APK for Android local install"
+  "macos|pmtiles-arm64|github-release:protomaps/go-pmtiles|^go-pmtiles-[0-9].*_Darwin_arm64\\.zip$||PMTiles CLI for Apple Silicon map serving and extracts"
+  "macos|pmtiles-x86_64|github-release:protomaps/go-pmtiles|^go-pmtiles-[0-9].*_Darwin_x86_64\\.zip$||PMTiles CLI for Intel Mac map serving and extracts"
+  "windows|pmtiles-x86_64|github-release:protomaps/go-pmtiles|^go-pmtiles_[0-9].*_Windows_x86_64\\.zip$||PMTiles CLI for Windows map serving"
+  "linux|pmtiles-x86_64|github-release:protomaps/go-pmtiles|^go-pmtiles_[0-9].*_Linux_x86_64\\.tar\\.gz$||PMTiles CLI for Linux map serving and extracts"
 )
 
 # iOS/iPadOS cannot normally install app binaries from the drive. Keep App
@@ -136,6 +140,18 @@ MAPS=(
 
 MAP_RESOLVERS=(
   # "web|protomaps|sample-city|direct:https://example.com/sample-city.pmtiles|sample-city.pmtiles||Direct PMTiles resolver example"
+)
+
+# Browser maps for laptops are built as PMTiles extracts and served by ./ark-maps.
+# Source can be protomaps-latest or a direct http(s) .pmtiles URL.
+#
+# Format:
+#   "provider|region|source|maxzoom|west,south,east,north|notes"
+
+WEB_MAP_EXTRACTS=(
+  # "protomaps|portugal|protomaps-latest|14|-9.6,36.8,-6.0,42.3|Browser map for Portugal with street labels"
+  # "protomaps|spain|protomaps-latest|14|-18.3,27.4,4.4,43.9|Browser map for Spain, including Canary Islands, with street labels"
+  # "protomaps|france|protomaps-latest|14|-5.3,41.2,9.8,51.2|Browser map for mainland France and Corsica with street labels"
 )
 
 # ── Kolibri channels ─────────────────────────────────────────────────────────

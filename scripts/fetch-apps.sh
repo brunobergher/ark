@@ -156,73 +156,12 @@ print(sorted(matches, key=key)[-1])
   esac
 }
 
-write_app_docs() {
+write_ios_links() {
   local path name url notes
 
   [ "$DRY_RUN" = 0 ] || return 0
 
-  mkdir -p "$APP_MACOS_DIR" "$APP_WINDOWS_DIR" "$APP_ANDROID_DIR" "$APP_IOS_DIR" "$APP_LINUX_DIR"
-
-  path="$APP_DIR/README.txt"
-  cat > "$path" <<'EOF'
-Ark app pantry
-
-This directory is populated by ./update. It carries installers, portable apps,
-APKs, and app-prep notes needed to use the offline library.
-
-The git repo tracks the recipe. The prepared drive stores the binaries.
-EOF
-  keep "$path"
-
-  path="$APP_MACOS_DIR/README.txt"
-  cat > "$path" <<'EOF'
-macOS apps
-
-Open bundled .app folders, .dmg images, .zip archives, or command-line tools
-from this directory. macOS may ask for permission the first time an app runs,
-so test these while power and internet are available.
-EOF
-  keep "$path"
-
-  path="$APP_WINDOWS_DIR/README.txt"
-  cat > "$path" <<'EOF'
-Windows apps
-
-Run portable .exe files directly when available. If an app is only available as
-an installer, run it from this directory and keep the installed app tested on
-the machine you expect to use.
-EOF
-  keep "$path"
-
-  path="$APP_LINUX_DIR/README.txt"
-  cat > "$path" <<'EOF'
-Linux apps
-
-Run AppImage files directly after marking them executable. Command-line tool
-archives such as Kiwix Tools may need to be unpacked first. Test them on the
-Linux machine you expect to use before relying on the kit offline.
-EOF
-  keep "$path"
-
-  path="$APP_ANDROID_DIR/README.txt"
-  cat > "$path" <<'EOF'
-Android apps
-
-APK files in this directory can be installed from the Android Files app after
-allowing local installs from that app. Install and open these apps before an
-emergency so permissions and first-run prompts are already handled.
-EOF
-  keep "$path"
-
-  path="$APP_IOS_DIR/README.txt"
-  cat > "$path" <<'EOF'
-iOS and iPadOS apps
-
-iPhone and iPad normally cannot install app binaries from this drive. Use the
-App Store links here while internet is available, then use those apps for local
-files or Safari for services hosted by an Ark computer or appliance.
-EOF
-  keep "$path"
+  mkdir -p "$APP_IOS_DIR"
 
   path="$APP_IOS_DIR/app-store-links.html"
   {
@@ -250,7 +189,7 @@ EOF
   keep "$path"
 }
 
-write_app_docs
+write_ios_links
 
 echo
 log "App pantry"

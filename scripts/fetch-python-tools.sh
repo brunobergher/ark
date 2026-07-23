@@ -23,31 +23,6 @@ keep() {
   printf '%s\n' "$1" >> "$keep_file"
 }
 
-write_python_docs() {
-  local path
-
-  [ "$DRY_RUN" = 0 ] || return 0
-
-  mkdir -p "$APP_PYTHON_DIR/wheelhouse" "$APP_PYTHON_DIR/venvs"
-
-  path="$APP_PYTHON_DIR/README.txt"
-  cat > "$path" <<'EOF'
-Ark Python tools
-
-This directory is populated by ./update. It carries offline wheelhouses for
-Python-based tools such as Kolibri and Argos Translate.
-
-Create a drive-local virtualenv, then install from a wheelhouse without using
-the internet:
-
-  python3 -m venv /Volumes/ark/apps/python/venvs/kolibri
-  /Volumes/ark/apps/python/venvs/kolibri/bin/python -m pip install --no-index --find-links /Volumes/ark/apps/python/wheelhouse/kolibri kolibri
-
-Use the matching package name and wheelhouse directory for other tools.
-EOF
-  keep "$path"
-}
-
 download_tool() {
   local name="$1" spec="$2" notes="$3" dest label size
 
@@ -78,8 +53,6 @@ download_tool() {
     return 1
   fi
 }
-
-write_python_docs
 
 echo
 log "Python tool wheelhouses"
