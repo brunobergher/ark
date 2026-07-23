@@ -225,14 +225,12 @@ The generated layout is:
 
 ```text
 /apps/
-  README.txt
   macos/<name>/<file>
   windows/<name>/<file>
   linux/<name>/<file>
   android/<name>/<file.apk>
   python/wheelhouse/<name>/
   python/venvs/
-  ios/README.txt
   ios/app-store-links.html
 ```
 
@@ -298,7 +296,7 @@ Resolver-backed entries use the same resolver style as the app pantry:
 
 ```bash
 MAP_RESOLVERS=(
-  "web|protomaps|sample-city|direct:https://example.com/sample-city.pmtiles|sample-city.pmtiles||Direct PMTiles example"
+  "web|protomaps|lisbon|direct:https://your-map-source.example/lisbon.pmtiles|lisbon.pmtiles||Direct PMTiles example"
 )
 ```
 
@@ -306,7 +304,6 @@ The generated layout is:
 
 ```text
 /maps/
-  README.txt
   mobile/<provider>/<region>/<file>
   android/<provider>/<region>/<file>
   ios/<provider>/<region>/<file>
@@ -363,17 +360,16 @@ appliance start the Ark services, then let mobile devices use them through a
 browser. Connect every device to the same local Wi-Fi network. If there is no
 router, use a laptop hotspot or a travel router kept with the kit.
 
-Start Kiwix, Kolibri, and any future model or translation services on the host,
-then open one of these addresses on the phone or tablet:
+Start Kiwix, Kolibri, maps, or any model/translation services carried by the
+host, then open the host address on the phone or tablet:
 
 ```text
-http://ark.local
 http://<host-ip>:8080
+http://<host-ip>:8090
 ```
 
-`http://ark.local` depends on a future launcher or appliance advertising that
-name on the local network. Until then, use the host IP address shown by the
-computer that started the service.
+Use the host IP address shown by the computer that started the service. If you
+later add local DNS or mDNS, `http://ark.local` can point at the same host.
 
 Before putting the kit away, test one small `.zim`, one PDF, one video, and the
 hosted dashboard from each family phone or tablet. Keep the needed USB-C,

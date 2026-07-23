@@ -53,7 +53,7 @@ LLAMAFILE_RELEASE=""   # e.g. "https://github.com/Mozilla-Ocho/llamafile/release
 # content-pinned.
 
 APPS=(
-  # "windows|example|example.exe|https://example.com/example.exe||Pinned portable app or installer"
+  # "windows|vlc|vlc-3.0.21-win64.exe|https://get.videolan.org/vlc/3.0.21/win64/vlc-3.0.21-win64.exe||Pinned VLC installer for Windows"
 )
 
 # APP_RESOLVERS format:
@@ -126,7 +126,7 @@ MAPS=(
   # "mobile|osmand|portugal|Portugal_europe_2.obf.zip|https://download.osmand.net/download.php?standard=yes&file=Portugal_europe_2.obf.zip||OsmAnd app-ready map for Portugal"
   # "mobile|osmand|spain-madrid|Spain_madrid_europe_2.obf.zip|https://download.osmand.net/download.php?standard=yes&file=Spain_madrid_europe_2.obf.zip||OsmAnd app-ready map for Madrid"
   # "mobile|osmand|france-ile-de-france|France_ile-de-france_europe_2.obf.zip|https://download.osmand.net/download.php?standard=yes&file=France_ile-de-france_europe_2.obf.zip||OsmAnd app-ready map for Ile-de-France"
-  # "web|protomaps|sample-city|sample-city.pmtiles|https://example.com/sample-city.pmtiles||PMTiles for a future hosted web map"
+  # "web|protomaps|lisbon|lisbon.pmtiles|https://your-map-source.example/lisbon.pmtiles||Pinned PMTiles for the laptop map viewer"
   # "raw|geofabrik|portugal|portugal-latest.osm.pbf|https://download.geofabrik.de/europe/portugal-latest.osm.pbf||Raw OpenStreetMap extract for advanced conversion"
 )
 
@@ -139,7 +139,7 @@ MAPS=(
 #                                filename matches asset-pattern as an ERE.
 
 MAP_RESOLVERS=(
-  # "web|protomaps|sample-city|direct:https://example.com/sample-city.pmtiles|sample-city.pmtiles||Direct PMTiles resolver example"
+  # "web|protomaps|lisbon|direct:https://your-map-source.example/lisbon.pmtiles|lisbon.pmtiles||Direct PMTiles resolver example"
 )
 
 # Browser maps for laptops are built as PMTiles extracts and served by ./ark-maps.

@@ -160,6 +160,7 @@ write_ios_links() {
   local path name url notes
 
   [ "$DRY_RUN" = 0 ] || return 0
+  [ "${#ios_link_entries[@]}" -gt 0 ] || return 0
 
   mkdir -p "$APP_IOS_DIR"
 

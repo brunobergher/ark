@@ -8,6 +8,7 @@ preflight
 manifest_begin
 
 rc=0
+map_count=0
 keep_file=$(mktemp)
 maps_meta=$(mktemp)
 trap 'rm -f "$keep_file" "$maps_meta"' EXIT
@@ -406,6 +407,7 @@ for entry in "${web_map_entries[@]}"; do
       log "SKIP  $label — already built ($(human "$size"))"
       record "$label" "pmtiles-extract:$resolved#$bbox" "$size"
       keep_map_meta "$provider" "$region" "$bbox" "${maxzoom:-12}" "${notes:-}"
+      map_count=$((map_count+1))
       continue
     fi
   fi
@@ -418,6 +420,7 @@ for entry in "${web_map_entries[@]}"; do
     size=$(wc -c < "$dest" | tr -d ' ')
     record "$label" "pmtiles-extract:$resolved#$bbox" "$size"
     keep_map_meta "$provider" "$region" "$bbox" "${maxzoom:-12}" "${notes:-}"
+    map_count=$((map_count+1))
     log "OK    $label — $(human "$size")"
   else
     rm -f "$partial"
@@ -426,7 +429,11 @@ for entry in "${web_map_entries[@]}"; do
   fi
 done
 
-write_viewer
+if [ "$map_count" -gt 0 ]; then
+  write_viewer
+else
+  warn "no web maps were built successfully; viewer not generated"
+fi
 
 if [ "$PRUNE" = 1 ]; then
   prune_unlisted "$MAPS_DIR/web" "$keep_file"
