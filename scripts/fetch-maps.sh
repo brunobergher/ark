@@ -98,7 +98,7 @@ write_map_docs() {
 
   [ "$DRY_RUN" = 0 ] || return 0
 
-  mkdir -p "$MAPS_DIR/android" "$MAPS_DIR/ios" "$MAPS_DIR/web" "$MAPS_DIR/raw"
+  mkdir -p "$MAPS_DIR/mobile" "$MAPS_DIR/android" "$MAPS_DIR/ios" "$MAPS_DIR/web" "$MAPS_DIR/raw"
 
   path="$MAPS_DIR/README.txt"
   cat > "$path" <<'EOF'
@@ -108,6 +108,16 @@ This directory is populated by ./update. It carries app-ready offline map files,
 hosted web-map payloads, and optional raw OpenStreetMap extracts.
 
 The git repo tracks the recipe. The prepared drive stores the map files.
+EOF
+  keep "$path"
+
+  path="$MAPS_DIR/mobile/README.txt"
+  cat > "$path" <<'EOF'
+Mobile app maps
+
+These files are meant for offline map apps on phones and tablets. OsmAnd
+.obf.zip files should be opened or imported with OsmAnd after the app is
+installed. Test one import on the exact device before going offline.
 EOF
   keep "$path"
 

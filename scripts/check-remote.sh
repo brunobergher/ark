@@ -330,6 +330,8 @@ else
     p=$(probe "$url"); st="${p%%$'\t'*}"; sz="${p##*$'\t'}"
     if [ "$st" = "200" ]; then
       row "$(green OK)" "$name" "link reachable"
+    elif [ "$st" = "429" ]; then
+      row "$(yellow WARN)" "$name" "rate limited by app store; link kept"
     else
       row "$(red FAIL)" "$name" "HTTP $st"
       bad=$((bad+1))
@@ -389,7 +391,7 @@ echo
 if [ "$bad" -eq 0 ]; then
   set +u
   missing_stages=()
-  for stage in fetch-zims fetch-models fetch-apps fetch-python-tools fetch-maps fetch-kolibri fetch-argos; do
+  for stage in fetch-zims fetch-models fetch-apps fetch-python-tools fetch-maps build-kiwix-library fetch-kolibri fetch-argos; do
     [ -x "$HERE/$stage.sh" ] || missing_stages+=( "scripts/$stage.sh" )
   done
 

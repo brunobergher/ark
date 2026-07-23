@@ -85,6 +85,7 @@ APP_RESOLVERS=(
 IOS_APP_LINKS=(
   "Kiwix|https://apps.apple.com/app/kiwix/id997079563|Install before going offline for ZIM libraries"
   "VLC|https://apps.apple.com/app/vlc-media-player/id650377962|Install before going offline for broad media playback"
+  "OsmAnd Maps|https://apps.apple.com/app/osmand-maps-travel-navigate/id934850257|Install before going offline for app-ready offline maps"
 )
 
 # ── Python tool wheelhouses ──────────────────────────────────────────────────
@@ -111,13 +112,16 @@ PYTHON_TOOL_PACKAGES=(
 #   "platform|provider|region|filename|url|sha256|notes"
 #
 # Suggested platform values:
+#   mobile   App-ready files shared by Android/iOS workflows, such as OsmAnd .obf.zip
 #   android  App-specific mobile map files such as OsmAnd .obf.zip
 #   ios      App-specific mobile map files where import is supported
 #   web      Hosted browser map payloads such as .pmtiles
 #   raw      Advanced source data such as Geofabrik .osm.pbf or .shp.zip
 
 MAPS=(
-  # "android|osmand|california|California_northamerica_2.obf.zip|https://download.osmand.net/download.php?standard=yes&file=California_northamerica_2.obf.zip||OsmAnd offline map for California"
+  # "mobile|osmand|portugal|Portugal_europe_2.obf.zip|https://download.osmand.net/download.php?standard=yes&file=Portugal_europe_2.obf.zip||OsmAnd app-ready map for Portugal"
+  # "mobile|osmand|spain-madrid|Spain_madrid_europe_2.obf.zip|https://download.osmand.net/download.php?standard=yes&file=Spain_madrid_europe_2.obf.zip||OsmAnd app-ready map for Madrid"
+  # "mobile|osmand|france-ile-de-france|France_ile-de-france_europe_2.obf.zip|https://download.osmand.net/download.php?standard=yes&file=France_ile-de-france_europe_2.obf.zip||OsmAnd app-ready map for Ile-de-France"
   # "web|protomaps|sample-city|sample-city.pmtiles|https://example.com/sample-city.pmtiles||PMTiles for a future hosted web map"
   # "raw|geofabrik|portugal|portugal-latest.osm.pbf|https://download.geofabrik.de/europe/portugal-latest.osm.pbf||Raw OpenStreetMap extract for advanced conversion"
 )

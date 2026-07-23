@@ -158,14 +158,18 @@ slowly lose charge, and a few hours plugged in is good maintenance.
 Use Kiwix for everything in `/zim/`. On macOS and Windows, the computer is the
 primary runtime host: it can open content directly, run portable apps from
 `/apps/`, and serve the library to nearby phones and laptops. For one person,
-open the files in Kiwix Desktop. To serve the library on a local network:
+open the files in Kiwix Desktop. To serve the library on a local network, use
+the generated Kiwix library XML:
 
 ```bash
-kiwix-serve --port 8080 /Volumes/ark/zim/*.zim
+kiwix-serve --port 8080 --library /Volumes/ark/zim/library.xml
 ```
 
-Then open `http://<your-ip>:8080` from another device. If the router is down,
-use a laptop hotspot or local network sharing.
+`./update` rebuilds `/zim/library.xml` from completed `.zim` files using
+`kiwix-manage`. For a quick one-off test, `kiwix-serve --port 8080
+/Volumes/ark/zim/*.zim` can still serve files directly. Then open
+`http://<your-ip>:8080` from another device. If the router is down, use a
+laptop hotspot or local network sharing.
 
 Kolibri serves Khan Academy. If Kolibri is carried in `/apps/python/`, use the
 drive-local virtualenv created from the wheelhouse; otherwise use an installed
@@ -264,6 +268,12 @@ The repo stores map recipes; the prepared drive stores the map files. Configure
 regions in `scripts/kit.conf`, then run `./update` to populate `/maps/`. Map
 downloads stay out of git like the ZIMs, models, and app pantry.
 
+For usable phone/tablet maps today, prefer OsmAnd `.obf.zip` entries under
+`/maps/mobile/osmand/`. Install OsmAnd while internet is available, open one
+stored `.obf.zip` from the drive with OsmAnd, and confirm the region appears
+offline before relying on it. Raw Geofabrik `.osm.pbf` files are source data;
+they are valuable, but they are not a normal end-user phone workflow.
+
 Pinned map entries use this format:
 
 ```bash
@@ -285,6 +295,7 @@ The generated layout is:
 ```text
 /maps/
   README.txt
+  mobile/<provider>/<region>/<file>
   android/<provider>/<region>/<file>
   ios/<provider>/<region>/<file>
   web/<provider>/<region>/<file.pmtiles>
@@ -293,7 +304,7 @@ The generated layout is:
 
 | Format | Use | Notes |
 |---|---|---|
-| OsmAnd `.obf.zip` | Android or iOS with OsmAnd import where supported | Best mobile-first path; test on the exact device |
+| OsmAnd `.obf.zip` | Android or iOS with OsmAnd import where supported | Best mobile-first path; store under `/maps/mobile/osmand/` and test on the exact device |
 | Organic Maps files | Organic Maps app-specific workflow | Use direct/manual URLs only when you know the import path works |
 | PMTiles `.pmtiles` | Future hosted browser map from a laptop or appliance | Store now; viewer comes later |
 | Geofabrik `.osm.pbf` or `.shp.zip` | Advanced conversion or analysis | Useful source data, not the easiest phone workflow |
