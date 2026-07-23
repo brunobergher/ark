@@ -21,9 +21,10 @@ models, the app pantry in `/apps/`, map files in `/maps/`, or the files in
 configured downloads still exist and that the drive has room. `./update` runs
 the configured fetch stages and resumes interrupted downloads.
 
-Large Kiwix ZIM downloads run in parallel. Tune `MAX_PARALLEL_DOWNLOADS` in
-`scripts/kit.conf` if your connection or upstream mirrors behave better with
-more or fewer simultaneous files.
+Independent fetch stages run in parallel, and large Kiwix ZIM downloads also
+run in parallel inside the ZIM stage. Tune `MAX_PARALLEL_STAGES` and
+`MAX_PARALLEL_DOWNLOADS` in `scripts/kit.conf` if your connection or upstream
+mirrors behave better with more or fewer simultaneous jobs.
 
 Before you need the drive, prepare the devices that might use it:
 
@@ -128,7 +129,9 @@ with Ctrl-C; re-running `./update` resumes incomplete files. Active downloads
 use `.partial` files and are moved into their final names only after the file
 finishes and passes the available size/hash checks. If you change download
 settings while `./update` is already running, stop it with Ctrl-C and start it
-again; completed files are skipped and partial files resume.
+again; active parallel workers are stopped, completed files are skipped, and
+partial files resume. `./update --prune` runs stages serially so cleanup cannot
+race against another stage.
 
 ## Refresh
 
@@ -190,6 +193,10 @@ offline references, believe the references.
 The repo stores the recipe; the prepared drive stores the binaries. Configure
 app payloads in `scripts/kit.conf`, then run `./update` to populate `/apps/`.
 The app pantry is ignored by git alongside the downloaded knowledge library.
+By default, the app resolver recipes carry the Kiwix reader/server stack where
+upstream provides portable files: Kiwix Desktop for Windows/Linux, Kiwix Tools
+with `kiwix-serve` for macOS/Windows/Linux, and a universal Android Kiwix APK.
+macOS Kiwix reader installs still use the App Store workflow.
 
 Pinned app entries use this format:
 
@@ -204,7 +211,7 @@ release API:
 
 ```bash
 APP_RESOLVERS=(
-  "macos|kiwix|github-release:kiwix/kiwix-desktop|.*mac.*\\.dmg$||Latest Kiwix Desktop for macOS"
+  "macos|kiwix-tools-arm64|mirror-latest:https://download.kiwix.org/release/kiwix-tools|^kiwix-tools_macos-arm64-[0-9].*\\.tar\\.gz$||Kiwix tools including kiwix-serve"
 )
 ```
 
@@ -215,6 +222,7 @@ The generated layout is:
   README.txt
   macos/<name>/<file>
   windows/<name>/<file>
+  linux/<name>/<file>
   android/<name>/<file.apk>
   python/wheelhouse/<name>/
   python/venvs/
@@ -222,8 +230,9 @@ The generated layout is:
   ios/app-store-links.html
 ```
 
-For macOS, carry `.app`, `.dmg`, `.zip`, or command-line tools. For Windows,
-carry portable `.exe` builds where available, and installers where needed. For
+For macOS, carry `.app`, `.dmg`, `.zip`, `.tar.gz`, or command-line tools. For
+Windows, carry portable `.exe` or `.zip` builds where available, and installers
+where needed. For Linux, carry AppImages or command-line tool archives. For
 Android, carry APKs and test installing them from the drive after enabling
 local installs. For iOS/iPadOS, keep App Store prep links in `IOS_APP_LINKS`
 and install those apps before going offline.

@@ -17,10 +17,7 @@ job_count=0
 pool_started=0
 
 cleanup() {
-  local pid
-  for pid in "${job_pids[@]:-}"; do
-    kill "$pid" 2>/dev/null || true
-  done
+  terminate_trees "${job_pids[@]:-}"
   if [ "$pool_started" = 1 ]; then
     exec 9>&- 9<&- || true
   fi
@@ -62,6 +59,7 @@ start_zim_job() {
 
   read -r _ <&9
   {
+    trap 'terminate_trees $(child_pids $$); exit 130' INT TERM
     if ! run_zim_job "$url" "$dest" "$label" "$job_manifest"; then
       warn "$label failed"
       : > "$job_dir/failed.$job_count"

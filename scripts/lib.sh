@@ -17,6 +17,7 @@ APP_MACOS_DIR="$APP_DIR/macos"
 APP_WINDOWS_DIR="$APP_DIR/windows"
 APP_ANDROID_DIR="$APP_DIR/android"
 APP_IOS_DIR="$APP_DIR/ios"
+APP_LINUX_DIR="$APP_DIR/linux"
 APP_PYTHON_DIR="$APP_DIR/python"
 KOLIBRI_DIR="$KIT_ROOT/kolibri"
 TRANSLATE_DIR="$KIT_ROOT/translate"
@@ -38,6 +39,43 @@ log()  { printf '%s  %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$*" | tee -a "$LOG"
 warn() { log "WARN  $*"; }
 die()  { printf 'error: %s\n' "$*" >&2; exit 1; }
 
+is_running() {
+  kill -0 "$1" 2>/dev/null
+}
+
+child_pids() {
+  ps -axo pid=,ppid= | awk -v ppid="$1" '$2 == ppid {print $1}'
+}
+
+terminate_tree() {
+  local pid="$1" child
+
+  [ -n "${pid:-}" ] || return 0
+  is_running "$pid" || return 0
+
+  for child in $(child_pids "$pid"); do
+    terminate_tree "$child"
+  done
+
+  kill "$pid" 2>/dev/null || true
+}
+
+terminate_trees() {
+  local pid
+
+  for pid in "$@"; do
+    terminate_tree "$pid"
+  done
+
+  sleep 1
+
+  for pid in "$@"; do
+    if is_running "$pid"; then
+      kill -9 "$pid" 2>/dev/null || true
+    fi
+  done
+}
+
 human() { awk -v b="${1:-0}" 'BEGIN{ if (b<1073741824) printf "%.0f MB", b/1048576; else printf "%.1f GB", b/1073741824 }'; }
 human_or_unknown() {
   if [ "${1:-0}" -gt 0 ] 2>/dev/null; then
@@ -52,7 +90,7 @@ preflight() {
   command -v curl >/dev/null || die "curl not found"
   mkdir -p "$ZIM_DIR" "$MODEL_DIR" "$APP_DIR" "$KOLIBRI_DIR" \
            "$APP_MACOS_DIR" "$APP_WINDOWS_DIR" "$APP_ANDROID_DIR" "$APP_IOS_DIR" \
-           "$APP_PYTHON_DIR" \
+           "$APP_LINUX_DIR" "$APP_PYTHON_DIR" \
            "$TRANSLATE_DIR" "$MAPS_DIR" "$DOCS_DIR" || die "cannot write to $KIT_ROOT"
   touch "$LOG"
   local free
@@ -112,6 +150,7 @@ manifest_has_label() {
 # fetch <url> <dest> <label>  — resumable, size-verified
 fetch() {
   local url="$1" dest="$2" label="$3" expected have final status p partial partial_have
+  local attempt max_attempts before after curl_rc restarted
   partial="$dest.partial"
   p=$(probe "$url"); status="${p%%$'\t'*}"; expected="${p##*$'\t'}"
 
@@ -182,41 +221,46 @@ fetch() {
   fi
 
   mkdir -p "$(dirname "$partial")"
-  if curl -fL --continue-at - --progress-meter \
-       --retry "$CURL_RETRIES" --retry-delay 5 --retry-all-errors \
-       -o "$partial" "$url"; then
-    final=$(wc -c < "$partial" | tr -d ' ')
-    if [ "$expected" -gt 0 ] 2>/dev/null && [ "$final" != "$expected" ]; then
-      warn "$label size mismatch — got $final, expected $expected. Re-run to resume."
-      return 1
-    fi
-    mv "$partial" "$dest"
-    log "OK    $label"
-    record "$label" "$url" "$final"
-  else
-    if [ -f "$partial" ] && [ "$(wc -c < "$partial" | tr -d ' ')" -gt 0 ] 2>/dev/null; then
-      warn "$label resume failed. Restarting this file from the beginning."
-      rm -f "$partial"
-      if curl -fL --progress-meter \
-           --retry "$CURL_RETRIES" --retry-delay 5 --retry-all-errors \
-           -o "$partial" "$url"; then
-        final=$(wc -c < "$partial" | tr -d ' ')
-        if [ "$expected" -gt 0 ] 2>/dev/null && [ "$final" != "$expected" ]; then
-          warn "$label size mismatch — got $final, expected $expected. Re-run to resume."
-          return 1
-        fi
-        mv "$partial" "$dest"
-        log "OK    $label"
-        record "$label" "$url" "$final"
-      else
-        warn "$label download failed. Re-run to resume from where it stopped."
+
+  attempt=1
+  max_attempts="${CURL_RETRIES:-1}"
+  restarted=0
+  while [ "$attempt" -le "$max_attempts" ]; do
+    before=0
+    [ -f "$partial" ] && before=$(wc -c < "$partial" | tr -d ' ')
+
+    if curl -fL --continue-at - --progress-meter -o "$partial" "$url"; then
+      final=$(wc -c < "$partial" | tr -d ' ')
+      if [ "$expected" -gt 0 ] 2>/dev/null && [ "$final" != "$expected" ]; then
+        warn "$label size mismatch — got $final, expected $expected. Re-run to resume."
         return 1
       fi
-    else
-      warn "$label download failed. Re-run to resume from where it stopped."
-      return 1
+      mv "$partial" "$dest"
+      log "OK    $label"
+      record "$label" "$url" "$final"
+      return 0
     fi
-  fi
+
+    curl_rc=$?
+    after=0
+    [ -f "$partial" ] && after=$(wc -c < "$partial" | tr -d ' ')
+
+    if [ "$before" -gt 0 ] 2>/dev/null && [ "$after" -le "$before" ] 2>/dev/null && [ "$restarted" = 0 ]; then
+      warn "$label resume made no progress after curl exit $curl_rc — retrying this file from the beginning once"
+      rm -f "$partial"
+      restarted=1
+    elif [ "$after" -gt 0 ] 2>/dev/null; then
+      warn "$label interrupted after $(human "$after") of $(human_or_unknown "$expected") — retry $attempt/$max_attempts will resume"
+    else
+      warn "$label download attempt $attempt/$max_attempts failed with curl exit $curl_rc"
+    fi
+
+    attempt=$((attempt + 1))
+    [ "$attempt" -le "$max_attempts" ] && sleep 5
+  done
+
+  warn "$label download failed. Re-run to resume from where it stopped."
+  return 1
 }
 
 # fetch_verified <url> <dest> <label> <sha256>
@@ -331,12 +375,37 @@ manifest_begin() {
 manifest_commit() {
   MANIFEST_TMP="${MANIFEST_TMP:-$MANIFEST.tmp}"
   if [ "$DRY_RUN" = 1 ]; then rm -f "$MANIFEST_TMP"; return; fi
-  # merge: keep entries from other scripts that didn't run this time
-  if [ -f "$MANIFEST" ]; then
-    awk -F'\t' 'NR==FNR {seen[$1]=1; next} !($1 in seen)' \
-      "$MANIFEST_TMP" "$MANIFEST" >> "$MANIFEST_TMP"
-  fi
-  sort -u -o "$MANIFEST_TMP" "$MANIFEST_TMP"
-  mv "$MANIFEST_TMP" "$MANIFEST"
+
+  manifest_lock
+  {
+    # merge: keep entries from other scripts that didn't run this time
+    if [ -f "$MANIFEST" ]; then
+      awk -F'\t' 'NR==FNR {seen[$1]=1; next} !($1 in seen)' \
+        "$MANIFEST_TMP" "$MANIFEST" >> "$MANIFEST_TMP"
+    fi
+    sort -u -o "$MANIFEST_TMP" "$MANIFEST_TMP"
+    mv "$MANIFEST_TMP" "$MANIFEST"
+    manifest_unlock
+  } || {
+    manifest_unlock
+    return 1
+  }
   log "manifest updated — $MANIFEST"
+}
+
+manifest_lock() {
+  local lock="$KIT_ROOT/.manifest.lock" waited=0
+
+  while ! mkdir "$lock" 2>/dev/null; do
+    sleep 1
+    waited=$((waited + 1))
+    if [ "$waited" -eq 30 ]; then
+      warn "waiting for manifest lock"
+      waited=0
+    fi
+  done
+}
+
+manifest_unlock() {
+  rmdir "$KIT_ROOT/.manifest.lock" 2>/dev/null || true
 }

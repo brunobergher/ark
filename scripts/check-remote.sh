@@ -33,7 +33,7 @@ map_resolver_entries=( "${MAP_RESOLVERS[@]}" )
 python_tool_entries=( "${PYTHON_TOOL_PACKAGES[@]}" )
 
 resolve_app() {
-  local resolver="$1" pattern="$2" repo api tmp resolved url
+  local resolver="$1" pattern="$2" repo api tmp resolved url dir filename
 
   case "$resolver" in
     direct:*)
@@ -72,6 +72,58 @@ raise SystemExit(2)
       rm -f "$tmp"
       [ -n "$resolved" ] || return 1
       printf '%s\n' "$resolved"
+      ;;
+    mirror-latest:*)
+      dir="${resolver#mirror-latest:}"
+      tmp=$(mktemp)
+      if ! curl -fsSL --max-time 60 "$dir" -o "$tmp"; then
+        rm -f "$tmp"
+        return 1
+      fi
+      filename=$(python3 -c '
+import html.parser
+import re
+import sys
+
+pattern = re.compile(sys.argv[1])
+path = sys.argv[2]
+
+class Links(html.parser.HTMLParser):
+    def __init__(self):
+        super().__init__()
+        self.hrefs = []
+    def handle_starttag(self, tag, attrs):
+        if tag != "a":
+            return
+        attrs = dict(attrs)
+        href = attrs.get("href", "")
+        if href:
+            self.hrefs.append(href)
+
+parser = Links()
+with open(path, "r", encoding="utf-8", errors="replace") as handle:
+    parser.feed(handle.read())
+
+matches = [
+    href
+    for href in parser.hrefs
+    if not href.endswith("/") and not href.endswith(".md5") and pattern.search(href)
+]
+if not matches:
+    raise SystemExit(2)
+
+def key(value):
+    return [int(part) if part.isdigit() else part.lower() for part in re.split(r"([0-9]+)", value)]
+
+print(sorted(matches, key=key)[-1])
+' "$pattern" "$tmp") || {
+        rm -f "$tmp"
+        return 1
+      }
+      rm -f "$tmp"
+      [ -n "$filename" ] || return 1
+      url="${dir%/}/$filename"
+      printf 'latest\t%s\t%s\n' "$filename" "$url"
       ;;
     *)
       return 1
