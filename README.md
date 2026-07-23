@@ -23,6 +23,17 @@ configured downloads still exist and that the drive has room. `./update` runs
 the configured fetch stages and resumes interrupted downloads. `./ark-maps`
 starts the offline laptop map viewer when web maps are present.
 
+To use maps on a laptop, run:
+
+```bash
+./ark-maps
+```
+
+Your browser should open `http://127.0.0.1:8090`. Pick a region such as
+Portugal, Spain, or France from the dropdown, then zoom in for city and street
+names. Leave the terminal open while using the map; press `Ctrl-C` there when
+you are done.
+
 Independent fetch stages run in parallel, and large Kiwix ZIM downloads also
 run in parallel inside the ZIM stage. Tune `MAX_PARALLEL_STAGES` and
 `MAX_PARALLEL_DOWNLOADS` in `scripts/kit.conf` if your connection or upstream
